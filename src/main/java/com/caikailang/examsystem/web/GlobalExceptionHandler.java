@@ -18,7 +18,7 @@ import java.util.List;
  * <p>只作用于 {@code web.api} 包下的 REST 控制器；页面控制器抛出的异常仍走
  * Spring Boot 默认的错误页，不会把 JSON 塞进 HTML 响应。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @RestControllerAdvice(basePackages = "com.caikailang.examsystem.web.api")
 public class GlobalExceptionHandler {

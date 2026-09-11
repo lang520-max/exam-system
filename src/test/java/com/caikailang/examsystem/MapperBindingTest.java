@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link Configuration} 里查有没有对应的 statement。只要有人加了方法忘了写 SQL，
  * 跑 {@code mvn test} 就会立刻失败，而不是等到上线后某个接口被点到才炸。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @SpringBootTest
 @ActiveProfiles("test")

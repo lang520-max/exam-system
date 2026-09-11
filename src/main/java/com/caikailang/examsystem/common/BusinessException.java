@@ -6,7 +6,7 @@ package com.caikailang.examsystem.common;
  * <p>由 {@link com.caikailang.examsystem.web.GlobalExceptionHandler} 统一转换为
  * {@link Result} 响应，避免把业务错误当成 500 系统异常抛出，也避免堆栈直接暴露给前端。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class BusinessException extends RuntimeException {
 

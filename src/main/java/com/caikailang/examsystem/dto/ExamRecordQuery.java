@@ -3,7 +3,7 @@ package com.caikailang.examsystem.dto;
 /**
  * 考试记录查询条件（教师查某场考试的成绩、学生查自己的历史成绩都用它）。
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class ExamRecordQuery {
 

@@ -15,7 +15,7 @@ import java.math.BigDecimal;
  * 「答案是否落在选项范围内」「多选题答案至少要两个字母」这类跨字段规则
  * 放在 {@code QuestionService} 里校验，因为需要结合题型判断。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class QuestionForm {
 

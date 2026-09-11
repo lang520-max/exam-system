@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  *
  * <p>服务端只信任 Session 中的登录用户，任何前端传来的 userId 都不作为身份依据。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

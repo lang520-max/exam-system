@@ -11,7 +11,7 @@ import java.util.List;
  * <p>判分结果一次性批量入库：一次考试可能有几十道题，
  * 用 {@code <foreach>} 拼一条多值 INSERT，比循环单条插入少几十次网络往返。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public interface ExamAnswerMapper {
 

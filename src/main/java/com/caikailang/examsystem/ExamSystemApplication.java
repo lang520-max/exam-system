@@ -12,7 +12,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  * <p>{@code @MapperScan} 让 MyBatis 扫描 mapper 包，省去在每个接口上写 {@code @Mapper}。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @SpringBootApplication
 @MapperScan("com.caikailang.examsystem.mapper")

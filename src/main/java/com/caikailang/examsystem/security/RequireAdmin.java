@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
  *
  * <p>拦截器只是第一道防线：Service 层仍会再校验一次角色，避免将来新增入口时漏标注解。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

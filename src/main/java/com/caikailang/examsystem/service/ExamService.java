@@ -42,7 +42,7 @@ import java.util.List;
  *       本类只负责取题、调用判分、把结果落库。</li>
  * </ol>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @Service
 public class ExamService {

@@ -23,7 +23,7 @@ RUN mvn -B -q clean package -DskipTests
 # 运行阶段只要 JRE，镜像体积从 ~500MB 降到 ~180MB
 FROM eclipse-temurin:8-jre-alpine
 
-LABEL maintainer="蔡开浪" \
+LABEL maintainer="lang520-max" \
       description="在线考试/题库系统：教师组卷、学生答题、自动判分与成绩统计"
 
 WORKDIR /app

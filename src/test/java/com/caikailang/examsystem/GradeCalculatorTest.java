@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * 因此跑得飞快（毫秒级），也最容易定位问题。判分规则是考试系统的命门，
  * 这里把每一条规则都钉成一条用例。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 class GradeCalculatorTest {
 

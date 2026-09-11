@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>每个用例都用独立科目名（{@code 测试科目-xxxx}）造数据，
  * 因此不会与 H2 里的演示数据互相干扰。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @SpringBootTest
 @ActiveProfiles("test")

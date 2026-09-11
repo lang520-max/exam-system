@@ -27,7 +27,7 @@ import java.util.List;
  * <p>控制器只做「取 Session 身份 → 调 Service → 包 Result」，不写业务规则：
  * 角色校验在拦截器与 Service 各做一次，形成双保险。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @RestController
 @RequestMapping("/api/questions")

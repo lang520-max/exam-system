@@ -14,7 +14,7 @@ import java.util.List;
  * <p>因为 {@code exam_record} 含 {@code is_timeout} 这类「列名与属性名不同名」的布尔列，
  * XML 里用了显式 {@code <resultMap>}，不依赖自动映射，避免列名歧义。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public interface ExamRecordMapper {
 

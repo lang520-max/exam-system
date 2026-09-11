@@ -13,7 +13,7 @@ import java.util.List;
  * 采用「一个 Mapper 要么全注解、要么全 XML」的约定，避免混用时漏写 statement，
  * 运行期抛 {@code BindingException: Invalid bound statement (not found)}。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public interface QuestionMapper {
 

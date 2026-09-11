@@ -18,7 +18,7 @@ import javax.servlet.http.HttpSession;
  * 未登录访问 REST 接口返回 401 JSON，访问页面则 302 重定向到登录页；
  * 角色不符返回 403。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class AuthInterceptor implements HandlerInterceptor {
 

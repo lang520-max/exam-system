@@ -16,7 +16,7 @@ import java.util.Date;
  *       受影响行数为 0 即说明已被并发请求抢先交卷，直接抛业务异常，绝不重复计分。</li>
  * </ol>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class ExamRecord implements Serializable {
 

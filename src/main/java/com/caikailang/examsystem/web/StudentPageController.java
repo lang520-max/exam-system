@@ -24,7 +24,7 @@ import java.util.List;
  *
  * <p>答题页用服务端渲染出题目（刷新不丢题），交卷与倒计时用少量原生 JS 调 REST 接口。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @Controller
 @RequestMapping("/student")

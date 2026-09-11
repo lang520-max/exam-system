@@ -13,7 +13,7 @@ import java.util.List;
  *
  * <p>语句简单，全部用注解实现，因此没有对应的 XML 文件。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public interface ExamPaperQuestionMapper {
 

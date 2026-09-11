@@ -8,7 +8,7 @@ import java.io.Serializable;
  * <p>约定：0 成功、400 业务/参数错误、401 未登录、403 越权、404 资源不存在、500 系统异常。</p>
  *
  * @param <T> 业务数据类型
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class Result<T> implements Serializable {
 

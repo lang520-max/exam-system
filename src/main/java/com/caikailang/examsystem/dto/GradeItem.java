@@ -9,7 +9,7 @@ import java.math.BigDecimal;
  * <p>它只承载「判分」这件事需要的数据：题目 ID、学生答案、正确答案、本题满分、实际得分、对错。
  * 不携带题干/选项等内容字段，因此 {@code GradeCalculator} 完全可以脱离数据库做纯单元测试。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class GradeItem implements Serializable {
 

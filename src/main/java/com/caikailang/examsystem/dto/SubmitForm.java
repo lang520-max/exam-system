@@ -10,7 +10,7 @@ import java.util.Map;
  * <p>{@code answers} 的 key 是题目 ID、value 是学生答案（多选形如 {@code "ABD"}，未作答可不传）。
  * 学生身份取自 Session，绝不接受前端传入 studentId。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class SubmitForm {
 

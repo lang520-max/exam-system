@@ -10,7 +10,7 @@ import javax.validation.constraints.Size;
  * <p>刻意不提供 {@code role} 字段：注册入口只允许创建学生账号，
  * 教师账号由管理员在数据库/初始化脚本中开设，避免通过接口自封管理员（横向/纵向越权）。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class RegisterForm {
 

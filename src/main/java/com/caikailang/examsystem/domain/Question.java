@@ -18,7 +18,7 @@ import java.util.Date;
  * 浮点数累加会出现 {@code 0.1 + 0.2 = 0.30000000000000004} 这类误差，
  * 会让「满分 100」和「及格线 60」的比较出现意外结果。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class Question implements Serializable {
 

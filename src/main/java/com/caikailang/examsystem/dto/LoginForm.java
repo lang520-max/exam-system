@@ -6,7 +6,7 @@ import javax.validation.constraints.Size;
 /**
  * 登录表单。
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class LoginForm {
 

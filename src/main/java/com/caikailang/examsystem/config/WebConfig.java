@@ -11,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * Web 层配置：注册登录拦截器、提供密码编码器。
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {

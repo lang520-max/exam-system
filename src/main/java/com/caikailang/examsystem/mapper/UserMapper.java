@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Select;
  * <p>语句都很简单，全部用注解实现，因此<b>没有</b>对应的 UserMapper.xml，
  * 也就不存在「接口声明了方法、XML 里却没有 statement」的隐患。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public interface UserMapper {
 

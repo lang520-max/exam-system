@@ -11,7 +11,7 @@ import java.math.RoundingMode;
  * 及格率这类派生指标在 Java 里按 {@code passCount / totalCount} 计算并保留一位小数，
  * 避免把业务口径散落在 SQL 里。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class ExamStats implements Serializable {
 

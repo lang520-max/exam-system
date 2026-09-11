@@ -8,7 +8,7 @@ import java.util.List;
  * 分页结果封装（配合 MyBatis 的 LIMIT / OFFSET 查询使用）。
  *
  * @param <T> 列表元素类型
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class PageResult<T> implements Serializable {
 

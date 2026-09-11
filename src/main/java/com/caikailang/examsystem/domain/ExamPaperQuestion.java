@@ -12,7 +12,7 @@ import java.math.BigDecimal;
  *
  * <p>数据库上有 {@code UNIQUE(paper_id, question_id)}，保证同一道题不会在一份试卷里出现两次。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class ExamPaperQuestion implements Serializable {
 

@@ -22,7 +22,7 @@ import java.util.Set;
  * <p>写操作都要求操作者具备教师角色。拦截器已经挡了一层，这里再校验一次：
  * Service 是业务规则的最终防线，将来新增入口（定时任务、内部调用）时不会失守。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @Service
 public class QuestionService {

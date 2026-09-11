@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * 试卷持久层（全部方法在 {@code resources/mapper/ExamPaperMapper.xml} 中实现）。
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public interface ExamPaperMapper {
 

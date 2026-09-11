@@ -9,7 +9,7 @@ import java.util.Date;
  * <p>{@code password} 存 BCrypt 哈希；对外返回前必须调用 {@link #clearPassword()}，
  * 保证 REST 响应里永远不出现密码字段。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class User implements Serializable {
 

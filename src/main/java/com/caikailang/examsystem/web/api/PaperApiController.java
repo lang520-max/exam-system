@@ -28,7 +28,7 @@ import java.util.List;
  * <p>对外只提供「创建草稿」与「发布/结束」两类写操作，
  * 试卷内容一旦发布就不再支持修改，保证已考过的学生成绩口径稳定。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @RestController
 @RequestMapping("/api/papers")

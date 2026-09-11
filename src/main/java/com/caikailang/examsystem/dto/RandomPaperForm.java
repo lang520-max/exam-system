@@ -21,7 +21,7 @@ import java.util.List;
  * <p>{@code rules} 上的 {@code @Valid} 会级联校验集合里的每个 {@link RandomRule}，
  * 保证「数量为 0」「分值为负」这类脏数据在进入 Service 之前就被拦下。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class RandomPaperForm {
 

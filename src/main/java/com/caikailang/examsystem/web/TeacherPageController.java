@@ -24,7 +24,7 @@ import javax.servlet.http.HttpSession;
  *
  * <p>类级 {@link RequireAdmin} 由拦截器保证「未登录跳登录页、非教师返回 403」。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @Controller
 @RequestMapping("/teacher")

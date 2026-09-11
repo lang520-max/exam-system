@@ -31,7 +31,7 @@ import java.util.Set;
  * 因此都用 {@code @Transactional} 包起来：任何一步失败（例如题目不足、
  * 关联表写失败），试卷主记录不会被留下成为一张「没有题目的空卷」。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @Service
 public class ExamPaperService {

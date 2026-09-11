@@ -30,7 +30,7 @@ import java.util.List;
  * <p>所有涉及「我是谁」的参数都不从请求里读：开考、答题、交卷一律使用
  * Session 中的登录用户，前端无法通过改传 studentId 去看别人的答卷。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @RestController
 @RequestMapping("/api/exams")

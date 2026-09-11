@@ -22,7 +22,7 @@ import javax.servlet.http.HttpSession;
  * <p>学生只能看自己的（{@code /api/scores/my}，学生身份取自 Session），
  * 教师可以看任意一场考试的成绩与统计（{@code /api/scores/paper/**}）。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @RestController
 @RequestMapping("/api/scores")

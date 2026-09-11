@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * 一旦口令或哈希被改错，README 里的演示账号就登不进去，而这在跑集成测试时是发现不了的
  * （集成测试用的是 H2 脚本）。这条用例把 README 的承诺变成了可执行断言。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 class DemoDataPasswordTest {
 

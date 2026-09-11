@@ -22,7 +22,7 @@ import javax.validation.Valid;
  * <p>登录成功后把用户写入 {@code HttpSession}，后续所有接口的身份都取自 Session，
  * 前端无法通过传参冒充他人。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @RestController
 @RequestMapping("/api/auth")

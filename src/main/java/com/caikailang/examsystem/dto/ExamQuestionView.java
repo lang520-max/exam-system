@@ -14,7 +14,7 @@ import java.util.List;
  * 学生打开浏览器开发者工具就能在响应里看到标准答案，考试形同虚设。
  * 用独立的视图对象做「字段级最小暴露」，正确答案只在交卷后的错题回顾里出现。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class ExamQuestionView implements Serializable {
 

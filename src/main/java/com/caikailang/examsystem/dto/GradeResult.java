@@ -11,7 +11,7 @@ import java.util.List;
  * <p>由 {@code GradeCalculator#grade} 纯函数产出，不碰数据库、不依赖 Spring 上下文，
  * 因此判分规则可以被单元测试逐条钉死（单选/多选/判断、多选少选不得分等）。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class GradeResult implements Serializable {
 

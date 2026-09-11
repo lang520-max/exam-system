@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>这些用例专门挡住两类最容易悄悄回归的问题：<b>模板改坏了</b> 与
  * <b>新接口忘了标注解导致鉴权失效</b>。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @SpringBootTest
 @AutoConfigureMockMvc

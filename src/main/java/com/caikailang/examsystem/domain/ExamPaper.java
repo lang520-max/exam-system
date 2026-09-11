@@ -13,7 +13,7 @@ import java.util.Date;
  * <p>{@code totalScore} 在组卷时按各题分值累加后落库（不每次实时算），
  * {@code passScore} 用于及格判定：{@code 得分 >= passScore} 即为及格。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class ExamPaper implements Serializable {
 

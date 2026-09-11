@@ -16,7 +16,7 @@ import java.util.List;
  * <p>每道题在本卷中的分值取题库中的默认分值；若需要同题不同分，
  * 可在 {@code questionScores} 里按题目 ID 覆盖（可选）。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class PaperForm {
 

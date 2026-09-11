@@ -13,7 +13,7 @@ import java.util.Date;
  * <p>数据库唯一约束 {@code UNIQUE(record_id, question_id)}：一道题在同一个考试记录里
  * 只允许留一条作答，是防重复交卷的第二道保险。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class ExamAnswer implements Serializable {
 

@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>密码一律用 BCrypt 存储与校验；返回给控制器的 {@link User} 都会先
  * {@link User#clearPassword()}，保证密码哈希不会进 Session、不会进 JSON 响应。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @Service
 public class UserService {

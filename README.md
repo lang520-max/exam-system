@@ -914,12 +914,12 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 
 ## 十三、许可证
 
-本项目基于 [MIT License](LICENSE) 开源，版权归 **蔡开浪** 所有。
+本项目基于 [MIT License](LICENSE) 开源，版权归 **lang520-max** 所有。
 
 ```
 MIT License
 
-Copyright (c) 2025 蔡开浪
+Copyright (c) 2026 lang520-max
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

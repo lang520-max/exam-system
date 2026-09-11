@@ -14,7 +14,7 @@ import javax.servlet.http.HttpSession;
  * <p>页面控制器与 REST 控制器分开：前者返回模板名由 Thymeleaf 渲染，
  * 后者返回 {@code Result} JSON。混在一起会让异常处理的语义互相干扰。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @Controller
 public class PageController {

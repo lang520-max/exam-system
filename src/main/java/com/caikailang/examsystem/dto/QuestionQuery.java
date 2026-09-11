@@ -8,7 +8,7 @@ package com.caikailang.examsystem.dto;
  * 所以这里用 {@link #getSafeSortBy()} / {@link #getSafeSortDir()} 做白名单收敛，
  * 非法值一律回落到默认排序，从根上堵住 ORDER BY 注入。</p>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 public class QuestionQuery {
 

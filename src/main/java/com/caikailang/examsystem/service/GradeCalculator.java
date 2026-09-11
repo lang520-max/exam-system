@@ -32,7 +32,7 @@ import java.util.Set;
  *   <li>整卷得分 = 各题得分之和，按题目在试卷上的分值快照累加。</li>
  * </ul>
  *
- * @author 蔡开浪
+ * @author lang520-max
  */
 @Component
 public class GradeCalculator {
