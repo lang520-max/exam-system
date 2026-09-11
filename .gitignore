@@ -1,0 +1,38 @@
+# ---------- 构建产物 ----------
+target/
+*.class
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# ---------- 本地 H2 开发库（dev 档自动生成，含运行期数据，不入库） ----------
+data/
+*.mv.db
+*.trace.db
+*.lock.db
+
+# ---------- IDE ----------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# ---------- 日志与临时文件 ----------
+logs/
+*.log
+hs_err_pid*
+replay_pid*
+*.tmp
+
+# ---------- 操作系统 ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- 敏感配置（本地覆盖，不入库） ----------
+src/main/resources/application-local.yml

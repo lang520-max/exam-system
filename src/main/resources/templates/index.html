@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>在线考试 / 题库系统</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/common :: topbar(${user})}"></header>
+
+<main class="container">
+  <h1>在线考试 / 题库系统</h1>
+  <p class="muted">
+    面向高校与培训场景的在线考试平台：教师维护题库、手动或随机组卷、发布考试并查看成绩统计；
+    学生在线答题、交卷后立即自动判分，并可查看成绩单与错题回顾。
+  </p>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">题型支持</div>
+      <div class="value">3</div>
+      <div class="muted">单选 / 多选 / 判断</div>
+    </div>
+    <div class="stat">
+      <div class="label">组卷方式</div>
+      <div class="value">2</div>
+      <div class="muted">手动选题 / 随机抽题</div>
+    </div>
+    <div class="stat">
+      <div class="label">判分</div>
+      <div class="value">自动</div>
+      <div class="muted">交卷即出分</div>
+    </div>
+    <div class="stat">
+      <div class="label">超时</div>
+      <div class="value">自动交卷</div>
+      <div class="muted">并标记超时</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>演示账号（明文口令均为 123456）</h2>
+    <table>
+      <thead>
+      <tr><th>角色</th><th>用户名</th><th>可以做什么</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><span class="tag blue">教师</span></td>
+        <td>teacher</td>
+        <td>维护题库、手动/随机组卷、发布考试、查看成绩统计</td>
+      </tr>
+      <tr>
+        <td><span class="tag">学生</span></td>
+        <td>student01</td>
+        <td>参加考试、交卷判分、查看成绩与错题回顾</td>
+      </tr>
+      <tr>
+        <td><span class="tag">学生</span></td>
+        <td>student02</td>
+        <td>同上（已预置一份 80 分的答卷，方便查看成绩统计）</td>
+      </tr>
+      </tbody>
+    </table>
+    <p style="margin-top:16px">
+      <a class="btn" th:href="@{/login}">立即登录</a>
+      <a class="btn ghost" th:href="@{/register}">注册学生账号</a>
+    </p>
+  </div>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+</body>
+</html>

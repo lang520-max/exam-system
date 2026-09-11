@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  题库持久层 XML。
+  约定：QuestionMapper 接口里的每个方法在这里都必须有一个同名的 statement，
+  否则启动后调用会抛 BindingException: Invalid bound statement (not found)。
+-->
+<mapper namespace="com.caikailang.examsystem.mapper.QuestionMapper">
+
+  <sql id="baseColumns">
+    q.id, q.type, q.subject, q.knowledge_point, q.content,
+    q.option_a, q.option_b, q.option_c, q.option_d,
+    q.answer, q.score, q.difficulty, q.creator_id, q.created_at, q.updated_at,
+    u.nickname AS creator_nickname
+  </sql>
+
+  <!-- 动态检索条件；search 与 countByQuery 共用，保证「列表」与「总数」口径完全一致 -->
+  <sql id="searchWhere">
+    <where>
+      <if test="subject != null and subject != ''">
+        AND q.subject = #{subject}
+      </if>
+      <if test="type != null and type != ''">
+        AND q.type = #{type}
+      </if>
+      <if test="difficulty != null and difficulty != ''">
+        AND q.difficulty = #{difficulty}
+      </if>
+      <if test="creatorId != null">
+        AND q.creator_id = #{creatorId}
+      </if>
+      <if test="keyword != null and keyword != ''">
+        AND (q.content LIKE CONCAT('%', #{keyword}, '%')
+             OR q.knowledge_point LIKE CONCAT('%', #{keyword}, '%'))
+      </if>
+    </where>
+  </sql>
+
+  <insert id="insert" parameterType="com.caikailang.examsystem.domain.Question"
+          useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO question (type, subject, knowledge_point, content,
+                          option_a, option_b, option_c, option_d,
+                          answer, score, difficulty, creator_id, created_at, updated_at)
+    VALUES (#{type}, #{subject}, #{knowledgePoint}, #{content},
+            #{optionA}, #{optionB}, #{optionC}, #{optionD},
+            #{answer}, #{score}, #{difficulty}, #{creatorId}, NOW(), NOW())
+  </insert>
+
+  <update id="update" parameterType="com.caikailang.examsystem.domain.Question">
+    UPDATE question
+    SET type = #{type},
+        subject = #{subject},
+        knowledge_point = #{knowledgePoint},
+        content = #{content},
+        option_a = #{optionA},
+        option_b = #{optionB},
+        option_c = #{optionC},
+        option_d = #{optionD},
+        answer = #{answer},
+        score = #{score},
+        difficulty = #{difficulty},
+        updated_at = NOW()
+    WHERE id = #{id}
+  </update>
+
+  <delete id="deleteById">
+    DELETE FROM question WHERE id = #{id}
+  </delete>
+
+  <select id="findById" resultType="com.caikailang.examsystem.domain.Question">
+    SELECT <include refid="baseColumns"/>
+    FROM question q
+    LEFT JOIN `user` u ON q.creator_id = u.id
+    WHERE q.id = #{id}
+  </select>
+
+  <!--
+    排序字段走 QuestionQuery#getSafeSortBy() 白名单（created_at / score / id），
+    非法输入会先被收敛成默认值再拼进 SQL，因此这里的 ${} 是安全的。
+    ORDER BY 的列名无法用 #{} 预编译占位，白名单是这类场景的标准做法。
+  -->
+  <select id="search" parameterType="com.caikailang.examsystem.dto.QuestionQuery"
+          resultType="com.caikailang.examsystem.domain.Question">
+    SELECT <include refid="baseColumns"/>
+    FROM question q
+    LEFT JOIN `user` u ON q.creator_id = u.id
+    <include refid="searchWhere"/>
+    ORDER BY q.${safeSortBy} ${safeSortDir}, q.id DESC
+    LIMIT #{safePageSize} OFFSET #{offset}
+  </select>
+
+  <select id="countByQuery" parameterType="com.caikailang.examsystem.dto.QuestionQuery"
+          resultType="long">
+    SELECT COUNT(*)
+    FROM question q
+    <include refid="searchWhere"/>
+  </select>
+
+  <!-- 随机组卷抽题：RAND() 在 MySQL 与 H2(MySQL 模式) 下都可用 -->
+  <select id="findRandomIds" resultType="long">
+    SELECT q.id
+    FROM question q
+    WHERE q.subject = #{subject}
+      AND q.type = #{type}
+    ORDER BY RAND()
+    LIMIT #{limit}
+  </select>
+
+  <select id="findByIds" resultType="com.caikailang.examsystem.domain.Question">
+    SELECT <include refid="baseColumns"/>
+    FROM question q
+    LEFT JOIN `user` u ON q.creator_id = u.id
+    WHERE q.id IN
+    <foreach collection="ids" item="item" open="(" separator="," close=")">
+      #{item}
+    </foreach>
+    ORDER BY q.id ASC
+  </select>
+
+  <select id="listSubjects" resultType="string">
+    SELECT DISTINCT q.subject FROM question q ORDER BY q.subject ASC
+  </select>
+
+</mapper>

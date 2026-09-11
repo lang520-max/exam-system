@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>我的成绩 - 在线考试 / 题库系统</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/common :: topbar(${user})}"></header>
+
+<main class="container">
+  <div class="page-head">
+    <h1>我的成绩</h1>
+    <a class="btn ghost" th:href="@{/student/exams}">去考试</a>
+  </div>
+
+  <!-- 个人成绩概览：跨所有试卷汇总 -->
+  <div class="stats" th:if="${stats != null}">
+    <div class="stat">
+      <div class="label">考试场次</div>
+      <div class="value" th:text="${stats.totalCount}">0</div>
+      <div class="muted">已交卷的场次</div>
+    </div>
+    <div class="stat">
+      <div class="label">平均分</div>
+      <div class="value" th:text="${stats.avgScore}">0</div>
+    </div>
+    <div class="stat">
+      <div class="label">及格率</div>
+      <div class="value green" th:text="|${stats.passRate}%|">0%</div>
+      <div class="muted" th:text="|及格 ${stats.passCount} 场|">及格 0 场</div>
+    </div>
+    <div class="stat">
+      <div class="label">最高分</div>
+      <div class="value green" th:text="${stats.maxScore}">0</div>
+    </div>
+    <div class="stat">
+      <div class="label">最低分</div>
+      <div class="value red" th:text="${stats.minScore}">0</div>
+    </div>
+  </div>
+
+  <table class="wrapped">
+    <thead>
+    <tr>
+      <th>考试</th>
+      <th>科目</th>
+      <th>状态</th>
+      <th>得分</th>
+      <th>得分率</th>
+      <th>答对 / 总题数</th>
+      <th>交卷时间</th>
+      <th>结果</th>
+      <th>操作</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:if="${page.list.isEmpty()}">
+      <td colspan="9" class="muted">还没有考试记录，去「在线考试」挑一场试试。</td>
+    </tr>
+    <tr th:each="r : ${page.list}">
+      <td><b th:text="${r.paperTitle}">试卷</b></td>
+      <td class="muted" th:text="${r.paperSubject}">科目</td>
+      <td>
+        <span class="tag" th:classappend="${r.submitted} ? 'green' : 'amber'"
+              th:text="${r.submitted} ? '已交卷' : '答题中'">状态</span>
+        <span class="tag red" th:if="${r.timeout}">超时</span>
+      </td>
+      <td>
+        <b th:text="${r.score}">0</b>
+        <span class="muted" th:text="|/ ${r.paperTotalScore}|"></span>
+      </td>
+      <td th:text="|${r.scorePercent}%|">0%</td>
+      <td th:text="|${r.correctCount} / ${r.totalCount}|">0 / 0</td>
+      <td class="muted nowrap"
+          th:text="${r.submitTime != null} ? ${#dates.format(r.submitTime, 'yyyy-MM-dd HH:mm')} : '—'">时间</td>
+      <td>
+        <span class="tag green" th:if="${r.passed}">及格</span>
+        <span class="tag red" th:if="${r.submitted and !r.passed}">不及格</span>
+        <span class="tag" th:if="${!r.submitted}">未出分</span>
+      </td>
+      <td class="nowrap">
+        <a class="btn sm ghost" th:if="${r.submitted}" th:href="@{/student/review(recordId=${r.id})}">成绩单 / 错题</a>
+        <a class="btn sm" th:if="${!r.submitted}" th:href="@{/student/exam(recordId=${r.id})}">继续答题</a>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <div class="pager">
+    <a th:if="${page.pageNum > 1}" th:href="@{/student/scores(pageNum=${page.pageNum - 1})}">上一页</a>
+    <span class="current" th:text="|第 ${page.pageNum} / ${page.pages} 页|">第 1 / 1 页</span>
+    <a th:if="${page.pageNum < page.pages}" th:href="@{/student/scores(pageNum=${page.pageNum + 1})}">下一页</a>
+    <span class="muted" th:text="|共 ${page.total} 条记录|"></span>
+  </div>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

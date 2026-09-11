@@ -1,0 +1,66 @@
+# ============================================================
+#  在线考试 / 题库系统 —— 应用 + MySQL 一键编排
+#  使用：docker compose up -d --build
+#        首次启动会自动执行 sql/schema.sql 与 sql/data.sql 建库并灌入演示数据
+#  说明：本机未安装 Docker，此文件仅作为交付物，未在本地实际运行
+# ============================================================
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0.33
+    container_name: exam-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: exam_system
+      TZ: Asia/Shanghai
+    command:
+      # utf8mb4 支持中文题干与 emoji；关闭 ONLY_FULL_GROUP_BY 便于统计类聚合 SQL
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    ports:
+      - "3307:3306"
+    volumes:
+      - exam-mysql-data:/var/lib/mysql
+      # 官方镜像会按文件名顺序执行 /docker-entrypoint-initdb.d 下的脚本
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./sql/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - exam-net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exam-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: "-Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
+      # 用环境变量覆盖 application.yml 里的本地连接串，指向 compose 网络内的 mysql 服务
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/exam_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+    ports:
+      - "8080:8080"
+    networks:
+      - exam-net
+
+volumes:
+  exam-mysql-data:
+    driver: local
+
+networks:
+  exam-net:
+    driver: bridge

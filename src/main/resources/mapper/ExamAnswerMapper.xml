@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 答题明细持久层 XML，与 ExamAnswerMapper 接口方法一一对应 -->
+<mapper namespace="com.caikailang.examsystem.mapper.ExamAnswerMapper">
+
+  <!-- 显式列出 is_correct，避免布尔列在自动映射下丢失 -->
+  <resultMap id="answerMap" type="com.caikailang.examsystem.domain.ExamAnswer">
+    <id column="id" property="id"/>
+    <result column="record_id" property="recordId"/>
+    <result column="question_id" property="questionId"/>
+    <result column="student_answer" property="studentAnswer"/>
+    <result column="correct_answer" property="correctAnswer"/>
+    <result column="score" property="score"/>
+    <result column="earned_score" property="earnedScore"/>
+    <result column="is_correct" property="correct"/>
+    <result column="created_at" property="createdAt"/>
+    <!-- 关联带出的题目内容，供错题回顾渲染 -->
+    <result column="type" property="type"/>
+    <result column="subject" property="subject"/>
+    <result column="knowledge_point" property="knowledgePoint"/>
+    <result column="content" property="content"/>
+    <result column="option_a" property="optionA"/>
+    <result column="option_b" property="optionB"/>
+    <result column="option_c" property="optionC"/>
+    <result column="option_d" property="optionD"/>
+  </resultMap>
+
+  <sql id="detailColumns">
+    a.id, a.record_id, a.question_id, a.student_answer, a.correct_answer,
+    a.score, a.earned_score, a.is_correct, a.created_at,
+    q.type, q.subject, q.knowledge_point, q.content,
+    q.option_a, q.option_b, q.option_c, q.option_d
+  </sql>
+
+  <!--
+    判分结果批量落库：一条 INSERT 插入本次考试的全部作答，
+    比循环单条插入少几十次数据库往返。判分失败时整体回滚（见 ExamService#submit 的事务）。
+  -->
+  <insert id="batchInsert">
+    INSERT INTO exam_answer (record_id, question_id, student_answer, correct_answer,
+                             score, earned_score, is_correct, created_at)
+    VALUES
+    <foreach collection="list" item="item" separator=",">
+      (#{item.recordId}, #{item.questionId}, #{item.studentAnswer}, #{item.correctAnswer},
+       #{item.score}, #{item.earnedScore}, #{item.correct}, NOW())
+    </foreach>
+  </insert>
+
+  <!-- 按试卷题序返回，保证成绩单上的题目顺序与考试时一致 -->
+  <select id="findByRecordId" resultMap="answerMap">
+    SELECT <include refid="detailColumns"/>
+    FROM exam_answer a
+    JOIN question q ON a.question_id = q.id
+    JOIN exam_record r ON a.record_id = r.id
+    LEFT JOIN exam_paper_question pq
+           ON pq.question_id = a.question_id AND pq.paper_id = r.paper_id
+    WHERE a.record_id = #{recordId}
+    ORDER BY pq.sort_order ASC, a.id ASC
+  </select>
+
+  <select id="findWrongByRecordId" resultMap="answerMap">
+    SELECT <include refid="detailColumns"/>
+    FROM exam_answer a
+    JOIN question q ON a.question_id = q.id
+    JOIN exam_record r ON a.record_id = r.id
+    LEFT JOIN exam_paper_question pq
+           ON pq.question_id = a.question_id AND pq.paper_id = r.paper_id
+    WHERE a.record_id = #{recordId}
+      AND a.is_correct = FALSE
+    ORDER BY pq.sort_order ASC, a.id ASC
+  </select>
+
+</mapper>

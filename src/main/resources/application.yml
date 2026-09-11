@@ -1,0 +1,37 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+    session:
+      # 考试期间 Session 不能过期，否则学生答到一半被踢回登录页
+      timeout: 2h
+
+spring:
+  application:
+    name: exam-system
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 本地 MySQL 8；Docker 部署时用环境变量 SPRING_DATASOURCE_URL 覆盖（见 docker-compose.yml）
+    url: jdbc:mysql://localhost:3306/exam_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+  thymeleaf:
+    # 开发期关掉模板缓存，改完 HTML 刷新即可生效；生产环境应置为 true
+    cache: false
+    encoding: UTF-8
+    mode: HTML
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.caikailang.examsystem.domain
+  configuration:
+    # question.creator_id -> creatorId 这类下划线到驼峰的自动映射
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    com.caikailang.examsystem: info
+    # 排查 SQL 时改成 debug，可打印 MyBatis 实际执行的语句与参数
+    com.caikailang.examsystem.mapper: info

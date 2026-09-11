@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>成绩统计 - 在线考试 / 题库系统</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/common :: topbar(${user})}"></header>
+
+<main class="container">
+  <div class="page-head">
+    <h1>成绩统计</h1>
+    <a class="btn ghost" th:href="@{/teacher/papers}">返回试卷管理</a>
+  </div>
+
+  <div class="card">
+    <h2>选择试卷</h2>
+    <div class="filters">
+      <a th:each="p : ${papers}" class="btn sm"
+         th:classappend="${p.id == selectedPaperId} ? 'btn' : 'btn ghost'"
+         th:href="@{/teacher/scores(paperId=${p.id})}"
+         th:text="|#${p.id} ${p.title}|">试卷</a>
+      <span th:if="${papers.isEmpty()}" class="muted">还没有试卷</span>
+    </div>
+  </div>
+
+  <th:block th:if="${selectedPaperId == null}">
+    <div class="card muted">请先在上方选择一份试卷，查看它的成绩列表与统计指标。</div>
+  </th:block>
+
+  <th:block th:if="${selectedPaperId != null}">
+    <!-- ------------------------------ 统计指标 ------------------------------ -->
+    <div class="stats" th:if="${stats != null}">
+      <div class="stat">
+        <div class="label">已交卷人数</div>
+        <div class="value" th:text="${stats.totalCount}">0</div>
+        <div class="muted" th:text="|及格线 ${stats.passScore} 分|">及格线 60 分</div>
+      </div>
+      <div class="stat">
+        <div class="label">平均分</div>
+        <div class="value" th:text="${stats.avgScore}">0</div>
+      </div>
+      <div class="stat">
+        <div class="label">及格率</div>
+        <div class="value green" th:text="|${stats.passRate}%|">0%</div>
+        <div class="muted" th:text="|及格 ${stats.passCount} 人|">及格 0 人</div>
+      </div>
+      <div class="stat">
+        <div class="label">最高分</div>
+        <div class="value green" th:text="${stats.maxScore}">0</div>
+      </div>
+      <div class="stat">
+        <div class="label">最低分</div>
+        <div class="value red" th:text="${stats.minScore}">0</div>
+      </div>
+    </div>
+
+    <!-- ------------------------------ 成绩列表 ------------------------------ -->
+    <table class="wrapped">
+      <thead>
+      <tr>
+        <th>考生</th>
+        <th>账号</th>
+        <th>状态</th>
+        <th>得分</th>
+        <th>得分率</th>
+        <th>答对 / 总题数</th>
+        <th>开始时间</th>
+        <th>交卷时间</th>
+        <th>是否及格</th>
+        <th>操作</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:if="${records.list.isEmpty()}">
+        <td colspan="10" class="muted">这场考试还没有学生参加。</td>
+      </tr>
+      <tr th:each="r : ${records.list}">
+        <td th:text="${r.studentNickname}">考生</td>
+        <td class="muted" th:text="${r.studentUsername}">账号</td>
+        <td>
+          <span class="tag" th:classappend="${r.submitted} ? 'green' : 'amber'"
+                th:text="${r.submitted} ? '已交卷' : '答题中'">状态</span>
+          <span class="tag red" th:if="${r.timeout}">超时</span>
+        </td>
+        <td><b th:text="${r.score}">0</b></td>
+        <td th:text="|${r.scorePercent}%|">0%</td>
+        <td th:text="|${r.correctCount} / ${r.totalCount}|">0 / 0</td>
+        <td class="muted nowrap" th:text="${#dates.format(r.startTime, 'MM-dd HH:mm')}">时间</td>
+        <td class="muted nowrap"
+            th:text="${r.submitTime != null} ? ${#dates.format(r.submitTime, 'MM-dd HH:mm')} : '—'">时间</td>
+        <td>
+          <span class="tag green" th:if="${r.passed}">及格</span>
+          <span class="tag red" th:if="${r.submitted and !r.passed}">不及格</span>
+          <span class="tag" th:if="${!r.submitted}">未出分</span>
+        </td>
+        <td class="nowrap">
+          <a class="btn sm ghost" th:if="${r.submitted}" th:href="@{/student/review(recordId=${r.id})}">答卷回顾</a>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+
+    <div class="pager" th:if="${records != null}">
+      <a th:if="${records.pageNum > 1}" th:href="@{/teacher/scores(paperId=${selectedPaperId}, pageNum=${records.pageNum - 1})}">上一页</a>
+      <span class="current" th:text="|第 ${records.pageNum} / ${records.pages} 页|">第 1 / 1 页</span>
+      <a th:if="${records.pageNum < records.pages}" th:href="@{/teacher/scores(paperId=${selectedPaperId}, pageNum=${records.pageNum + 1})}">下一页</a>
+      <span class="muted" th:text="|共 ${records.total} 条记录|"></span>
+    </div>
+  </th:block>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

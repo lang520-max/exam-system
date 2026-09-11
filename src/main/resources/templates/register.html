@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>注册 - 在线考试 / 题库系统</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/common :: topbar(${user})}"></header>
+
+<main class="container narrow">
+  <h1>注册学生账号</h1>
+  <form id="register-form" class="form">
+    <label>用户名
+      <input type="text" name="username" required minlength="4" maxlength="20" placeholder="4~20 位字母、数字或下划线">
+    </label>
+    <label>昵称
+      <input type="text" name="nickname" required minlength="2" maxlength="20" placeholder="2~20 位，成绩单上展示">
+    </label>
+    <label>密码
+      <input type="password" name="password" required minlength="6" maxlength="32" placeholder="6~32 位">
+    </label>
+    <button type="submit">注册并登录</button>
+  </form>
+  <p id="tip" class="tip"></p>
+  <p class="hint">
+    注册入口只能创建<b>学生</b>账号：教师账号由管理员在数据库中开设，
+    避免任何人都能通过接口把自己变成管理员。<br>
+    已有账号？<a th:href="@{/login}">去登录</a>
+  </p>
+</main>
+
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    必须使用 Spring Boot 2.7.x：本机 JDK 为 1.8，Spring Boot 3.x 要求 JDK 17 会直接编译失败。
+    2.7.18 是 2.7 分支的最后一个版本。
+  -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>2.7.18</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.caikailang</groupId>
+  <artifactId>exam-system</artifactId>
+  <version>1.0.0</version>
+  <name>exam-system</name>
+  <description>在线考试 / 题库系统 —— 教师组卷、学生在线答题、自动判分与成绩统计的一站式 B/S 系统</description>
+
+  <properties>
+    <java.version>1.8</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <mybatis.starter.version>2.3.1</mybatis.starter.version>
+  </properties>
+
+  <dependencies>
+    <!-- Web MVC + 内嵌 Tomcat -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- 服务端模板渲染（教师端 / 学生端页面） -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+
+    <!-- 参数校验（@Valid / @NotBlank / @NotNull ...） -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!-- 持久层：MyBatis（简单语句用注解，动态 SQL 用 XML） -->
+    <dependency>
+      <groupId>org.mybatis.spring.boot</groupId>
+      <artifactId>mybatis-spring-boot-starter</artifactId>
+      <version>${mybatis.starter.version}</version>
+    </dependency>
+
+    <!--
+      密码加密：只引 spring-security-crypto 这一个模块拿到 BCryptPasswordEncoder。
+      刻意不引 spring-boot-starter-security —— 那会自动装配过滤器链，
+      导致未带认证信息的接口一律返回 401，与本项目「Session + 注解拦截器」的鉴权方案冲突。
+    -->
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-crypto</artifactId>
+    </dependency>
+
+    <!-- 生产库：MySQL 8。Spring Boot 2.7 的依赖管理里没有 mysql:mysql-connector-java 这个坐标，必须显式写版本号 -->
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>8.0.33</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- H2：测试用内存库（MySQL 兼容模式），dev 档用文件库实现零依赖启动 -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- 测试：JUnit 5 + AssertJ + Hamcrest + Spring Test -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- 测试 JVM 以 UTF-8 读写资源文件（schema-h2.sql 内含中文注释），避免 Windows 默认 GBK 乱码 -->
+          <argLine>-Dfile.encoding=UTF-8</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+      </resource>
+    </resources>
+  </build>
+</project>

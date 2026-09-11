@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>组卷 - 在线考试 / 题库系统</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:replace="~{fragments/common :: topbar(${user})}"></header>
+
+<main class="container">
+  <div class="page-head">
+    <h1>组卷</h1>
+    <a class="btn ghost" th:href="@{/teacher/papers}">返回试卷管理</a>
+  </div>
+  <p class="hint">
+    两种方式都会生成<b>草稿</b>试卷，确认无误后到「试卷管理」里点「发布」，学生端才会看到。
+    常见做法：单选 10 题 × 4 分 + 多选 5 题 × 8 分 + 判断 5 题 × 4 分 = 100 分。
+  </p>
+
+  <div class="columns">
+    <!-- ======================= 手动选题组卷 ======================= -->
+    <section class="card">
+      <h2>方式一：手动选题</h2>
+      <form id="bank-search" class="filters" onsubmit="return false">
+        <label>关键字<input type="text" name="keyword" placeholder="题干包含…"></label>
+        <label>科目
+          <input type="text" name="subject" list="subject-options" placeholder="如：Java程序设计">
+        </label>
+        <label>题型
+          <select name="type">
+            <option value="">全部</option>
+            <option value="SINGLE">单选题</option>
+            <option value="MULTIPLE">多选题</option>
+            <option value="JUDGE">判断题</option>
+          </select>
+        </label>
+        <button type="button" id="bank-search-btn">检索题库</button>
+      </form>
+
+      <p class="hint" style="margin-top:12px">
+        已勾选 <b id="picked-count">0</b> 题，合计 <b id="picked-score">0.0</b> 分
+      </p>
+
+      <div style="max-height:360px; overflow:auto; border:1px solid var(--line); border-radius:8px; margin-top:8px">
+        <table>
+          <thead>
+          <tr>
+            <th><input type="checkbox" id="pick-all" title="全选"></th>
+            <th>编号</th><th>题型</th><th>题干</th><th>答案</th><th>分值</th>
+          </tr>
+          </thead>
+          <tbody id="bank-body">
+          <tr><td colspan="6" class="muted">正在加载题库…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <form id="manual-form" class="form" style="margin-top:16px">
+        <label>试卷标题<input type="text" name="title" required maxlength="100" placeholder="如：《Java程序设计》期中测试"></label>
+        <div class="form-row">
+          <label>科目<input type="text" name="subject" required maxlength="32" list="subject-options" placeholder="如：Java程序设计"></label>
+          <label>时长（分钟）<input type="number" name="durationMinutes" required min="1" max="600" value="60"></label>
+          <label>及格分<input type="number" name="passScore" required min="0" step="0.5" value="60"></label>
+        </div>
+        <div><button type="submit">按勾选的题目组卷</button></div>
+        <p id="manual-tip" class="tip"></p>
+      </form>
+    </section>
+
+    <!-- ======================= 随机抽题组卷 ======================= -->
+    <section class="card">
+      <h2>方式二：按规则随机抽题</h2>
+      <p class="hint">
+        从题库中按「科目 + 题型」随机抽题。抽题在数据库侧用 <code>ORDER BY RAND()</code> 完成，
+        题库数量不足时整卷失败并提示还差几道。<b>同一题型只能配置一条规则。</b>
+      </p>
+
+      <form id="random-form" class="form" style="margin-top:12px">
+        <label>试卷标题<input type="text" name="title" required maxlength="100" value="随机抽题练习卷"></label>
+        <div class="form-row">
+          <label>科目<input type="text" name="subject" required maxlength="32" list="subject-options" value="Java程序设计"></label>
+          <label>时长（分钟）<input type="number" name="durationMinutes" required min="1" max="600" value="45"></label>
+          <label>及格分<input type="number" name="passScore" required min="0" step="0.5" value="60"></label>
+        </div>
+
+        <table class="rules-table">
+          <thead>
+          <tr><th>题型</th><th>抽题数量</th><th>每题分值</th></tr>
+          </thead>
+          <tbody>
+          <tr class="rule-row">
+            <td><select class="rule-type"><option value="SINGLE">单选题</option></select></td>
+            <td><input type="number" class="rule-count" min="0" max="50" value="10"></td>
+            <td><input type="number" class="rule-score" min="0.5" step="0.5" value="4"></td>
+          </tr>
+          <tr class="rule-row">
+            <td><select class="rule-type"><option value="MULTIPLE">多选题</option></select></td>
+            <td><input type="number" class="rule-count" min="0" max="50" value="5"></td>
+            <td><input type="number" class="rule-score" min="0.5" step="0.5" value="8"></td>
+          </tr>
+          <tr class="rule-row">
+            <td><select class="rule-type"><option value="JUDGE">判断题</option></select></td>
+            <td><input type="number" class="rule-count" min="0" max="50" value="5"></td>
+            <td><input type="number" class="rule-score" min="0.5" step="0.5" value="4"></td>
+          </tr>
+          </tbody>
+        </table>
+
+        <div><button type="submit">随机抽题组卷</button></div>
+        <p id="random-tip" class="tip"></p>
+      </form>
+    </section>
+  </div>
+
+  <datalist id="subject-options">
+    <option th:each="s : ${subjects}" th:value="${s}"></option>
+  </datalist>
+</main>
+
+<footer th:replace="~{fragments/common :: footer}"></footer>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

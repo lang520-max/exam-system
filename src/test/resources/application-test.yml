@@ -1,0 +1,41 @@
+# ============================================================================
+#  测试环境配置：H2 内存库（MySQL 兼容模式）
+#  目的：mvn test 完全不依赖本机是否安装 MySQL，克隆下来就能跑
+# ============================================================================
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    # MODE=MySQL 让 H2 接受 AUTO_INCREMENT / 反引号 / LIMIT ... OFFSET 等 MySQL 写法
+    # DATABASE_TO_LOWER=TRUE 让标识符统一小写，与 MySQL 的表现一致
+    url: jdbc:h2:mem:exam_system;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ''
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-h2.sql
+      data-locations: classpath:data-h2.sql
+      # 建表脚本里有中文注释与中文测试数据，显式指定 UTF-8，避免 Windows 默认 GBK 乱码
+      encoding: UTF-8
+  thymeleaf:
+    cache: false
+    encoding: UTF-8
+    mode: HTML
+
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.caikailang.examsystem.domain
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    com.caikailang.examsystem: info
+    # 测试输出保持干净；需要看 MyBatis 实际执行的 SQL 时把下面这行改成 debug
+    com.caikailang.examsystem.mapper: warn
