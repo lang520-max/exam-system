@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>在线答题 · 在线考试系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- 数学公式渲染（本地 KaTeX，离线可用） -->
+  <link rel="stylesheet" href="/vendor/katex/katex.min.css">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="container">
+  <div class="crumbs">
+    <a href="/student/exams.html">我的考试</a> / <span id="crumb-title">答题中</span>
+  </div>
+
+  <!-- 倒计时条 -->
+  <div class="timer-bar" id="timer-bar">
+    <div>
+      <div class="timer-meta">剩余时间</div>
+      <div class="timer-value" id="timer">--:--</div>
+    </div>
+    <div class="text-right">
+      <div class="timer-meta" id="timer-source">倒计时连接中…</div>
+      <div class="timer-meta" id="progress-text">已答 0 / 0</div>
+      <!-- 自动暂存状态：让「答案已经落到服务端」这件事可见，学生才敢刷新 -->
+      <div class="timer-meta" id="draft-status">作答会自动暂存</div>
+    </div>
+    <button class="btn btn-ghost" id="btn-submit-top">交 卷</button>
+    <!-- 答题进度：整行铺在计时条下方，由 renderSheet() 更新宽度 -->
+    <div class="timer-progress"><i id="progress-fill"></i></div>
+  </div>
+
+  <div id="loading" class="spinner">正在加载试卷…</div>
+
+  <div class="exam-layout" id="layout" style="display:none">
+    <div class="card" id="questions"></div>
+
+    <!-- 答题卡：做成真实答题卡的样子（题号方格 + 已答填色，按题型分组） -->
+    <div class="answer-sheet">
+      <div class="sheet-panel">
+        <div class="sheet-head">
+          <span>答题卡</span>
+          <span id="sheet-count">0 / 0</span>
+        </div>
+        <div id="sheet"></div>
+        <div class="sheet-legend">
+          <span><i class="sheet-dot on"></i>已答</span>
+          <span><i class="sheet-dot"></i>未答</span>
+        </div>
+        <button class="btn btn-block" id="btn-submit" style="margin-top:16px">交 卷</button>
+        <p class="muted" style="font-size:12px;margin:10px 0 0">
+          交卷后立即判分，不能再次作答。
+        </p>
+      </div>
+    </div>
+  </div>
+<p class="footnote">
+    作答每 30 秒自动暂存一次，切换标签页或关闭页面前也会再存一次；刷新或断线重连后自动回填。<br>
+    剩余时间以服务端为准，到点由服务端统一收卷 —— 页面上的倒计时只是显示。
+  </p>
+</div>
+
+<script src="/vendor/katex/katex.min.js"></script>
+<script src="/vendor/katex/contrib/auto-render.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/math.js"></script>
+<script>
+(function () {
+  var user = Auth.requireRole('student');
+  UI.renderNav('student', 'exams');
+
+  var recordId = new URLSearchParams(location.search).get('recordId');
+  if (!recordId) {
+    // 参数写错（例如把 recordId 写成 id）时原来是**静默跳回列表**，
+    // 用户只看到「页面自己跳走了」，不知道为什么（第二轮报告 Bug 19）。
+    // 给一句说明，并留出 900ms 让 toast 看得见。
+    UI.toast('这个链接缺少考试记录号，已返回考试列表', 'warn');
+    setTimeout(function () { location.replace('/student/exams.html'); }, 900);
+    return;
+  }
+
+  var record = null;      // MyRecordVO
+  var questions = [];     // QuestionVO[]
+  var answers = {};       // questionId -> string
+  var submitted = false;
+  var deadline = null;    // epoch ms
+  var ws = null;
+  var localTimer = null;
+
+  /* ---------------------------------------------------- 加载 */
+
+  function load() {
+    return API.get('/api/exams/my').then(function (list) {
+      record = (list || []).filter(function (r) { return String(r.recordId) === String(recordId); })[0];
+      if (!record) { throw new ApiError(404, '找不到这场考试记录'); }
+      if (record.status !== 0) {
+        // 已交卷 / 判分中 → 直接去成绩页
+        UI.toast('这场考试已交卷，正在跳转成绩单…', 'info');
+        setTimeout(function () {
+          location.replace('/student/scores.html?recordId=' + recordId);
+        }, 700);
+        return null;
+      }
+      document.getElementById('crumb-title').textContent = record.examTitle || '答题中';
+      document.title = (record.examTitle || '答题') + ' · 在线考试系统';
+      deadline = record.deadlineMillis || null;
+      return API.get('/api/exams/records/' + recordId + '/questions');
+    }).then(function (qs) {
+      if (!qs) { return; }
+      questions = qs || [];
+      renderQuestions();
+      renderSheet();
+      startCountdown();
+      // 回填上次暂存的作答（刷新 / 断线重连后不该白答）
+      return restoreDraft();
+    }).catch(function (err) {
+      document.getElementById('loading').innerHTML =
+        '<span class="text-danger">加载失败：' + UI.esc(err.message) + '</span>';
+    });
+  }
+
+  /* ---------------------------------------------------- 渲染 */
+
+  var TYPE_SINGLE = 0, TYPE_MULTIPLE = 1, TYPE_JUDGE = 2, TYPE_FILL = 3, TYPE_ESSAY = 4;
+  function typeName(t) {
+    return ({ 0: '单选题', 1: '多选题', 2: '判断题', 3: '填空题', 4: '简答题' })[t] || '题目';
+  }
+
+  function parseOptions(raw) {
+    if (!raw) { return []; }
+    try {
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+
+  function renderQuestions() {
+    var host = document.getElementById('questions');
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('layout').style.display = '';
+    if (!questions.length) {
+      host.innerHTML = '<div class="empty">这份试卷没有题目</div>';
+      return;
+    }
+    host.innerHTML = questions.map(function (q, idx) {
+      var body;
+      if (q.type === TYPE_FILL || q.type === TYPE_ESSAY) {
+        body = '<textarea data-input="' + q.id + '" rows="' + (q.type === TYPE_ESSAY ? 4 : 2) + '"'
+          + ' placeholder="请作答">' + '</textarea>';
+      } else {
+        var opts = parseOptions(q.options);
+        var inputType = (q.type === TYPE_MULTIPLE) ? 'checkbox' : 'radio';
+        var name = 'q_' + q.id;
+        body = '<div class="q-options">' + opts.map(function (o) {
+          return '<label class="q-option">'
+            + '<input type="' + inputType + '" name="' + name + '" value="' + UI.esc(o.label) + '"'
+            + ' data-input="' + q.id + '">'
+            + '<span class="label">' + UI.esc(o.label) + '.</span>'
+            + '<span>' + UI.esc(o.content) + '</span>'
+            + '</label>';
+        }).join('') + '</div>';
+      }
+      return '<div class="q-item" id="q-' + q.id + '">'
+        + '<div class="q-head">'
+        + '<span class="q-no">' + (idx + 1) + '.</span>'
+        + '<span class="badge badge-gray">' + typeName(q.type) + '</span>'
+        + '<span class="q-score">' + UI.esc(q.score) + ' 分</span>'
+        + '</div>'
+        + '<div class="q-content">' + UI.esc(q.content) + '</div>'
+        + body
+        + '</div>';
+    }).join('');
+
+    host.addEventListener('change', onInputChange);
+    host.addEventListener('input', onInputChange);
+  }
+
+  function onInputChange(ev) {
+    var el = ev.target;
+    var qid = el.getAttribute && el.getAttribute('data-input');
+    if (!qid) { return; }
+    collectOne(qid);
+    renderSheet();
+    markDraftDirty(qid);
+  }
+
+  /** 从 DOM 收集某题当前的答案 */
+  function collectOne(qid) {
+    var q = questions.filter(function (x) { return String(x.id) === String(qid); })[0];
+    if (!q) { return; }
+    if (q.type === TYPE_FILL || q.type === TYPE_ESSAY) {
+      var ta = document.querySelector('textarea[data-input="' + qid + '"]');
+      answers[qid] = ta ? ta.value : '';
+    } else if (q.type === TYPE_MULTIPLE) {
+      var checked = document.querySelectorAll('input[data-input="' + qid + '"]:checked');
+      var vals = Array.prototype.map.call(checked, function (c) { return c.value; }).sort();
+      answers[qid] = vals.join('');
+    } else {
+      var one = document.querySelector('input[data-input="' + qid + '"]:checked');
+      answers[qid] = one ? one.value : '';
+    }
+    if (!answers[qid]) { delete answers[qid]; }
+  }
+
+  /**
+   * 答题卡：按题型分组渲染成「题号方格」，每行 5 格，不足一行补空格子。
+   *
+   * 这是照真实答题卡来的：方格用 1px 线连成表格、已答整格填色、
+   * 一行的末尾留空（而不是让最后几格缺位）。原先是普通列表式的圆角格子。
+   */
+  function renderSheet() {
+    var answered = 0;
+    var order = [];
+    var byType = {};
+    questions.forEach(function (q, i) {
+      var has = answers[q.id] !== undefined && answers[q.id] !== '';
+      if (has) { answered++; }
+      if (!byType[q.type]) { byType[q.type] = []; order.push(q.type); }
+      byType[q.type].push({ q: q, no: i + 1, has: has });
+    });
+
+    var html = '';
+    order.forEach(function (type) {
+      var items = byType[type];
+      var blanks = (5 - (items.length % 5)) % 5;
+      html += '<div class="sheet-group">'
+        + '<div class="sheet-group-label">' + typeName(type)
+        + '<span>' + items[0].no + '–' + items[items.length - 1].no
+        + '　共 ' + items.length + ' 题</span></div>'
+        + '<div class="sheet-grid">';
+      items.forEach(function (it) {
+        html += '<div class="sheet-cell' + (it.has ? ' answered' : '') + '" data-jump="' + it.q.id + '">'
+          + it.no + '</div>';
+      });
+      for (var b = 0; b < blanks; b++) {
+        html += '<div class="sheet-cell blank"></div>';
+      }
+      html += '</div></div>';
+    });
+
+    document.getElementById('sheet').innerHTML = html;
+    document.getElementById('progress-text').textContent = '已答 ' + answered + ' / ' + questions.length;
+    document.getElementById('sheet-count').textContent = answered + ' / ' + questions.length;
+    var fill = document.getElementById('progress-fill');
+    if (fill) {
+      fill.style.width = (questions.length ? (answered / questions.length * 100) : 0) + '%';
+    }
+  }
+
+  /* ---------------------------------------------------- 倒计时 */
+
+  function startCountdown() {
+    // 先本地起一个兜底计时器（同时也是「到点交卷」的触发器）
+    paintLocalTime();
+    localTimer = setInterval(paintLocalTime, 1000);
+    connectWebSocket();
+  }
+
+  function paintLocalTime() {
+    if (deadline === null) {
+      document.getElementById('timer').textContent = '--:--';
+      return;
+    }
+    var remain = Math.floor((deadline - Date.now()) / 1000);
+    if (remain <= 0) {
+      document.getElementById('timer').textContent = '00:00';
+      autoSubmitIfNeeded();
+      return;
+    }
+    setTimerText(remain);
+  }
+
+  var serverDriven = false;
+
+  function connectWebSocket() {
+    if (!window.WebSocket || deadline === null) { return; }
+    var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    var url = proto + location.host + '/ws/exam/' + record.examId + '/' + user.userId
+      + '?token=' + encodeURIComponent(Store.getToken())
+      + '&deadline=' + deadline;
+
+    try { ws = new WebSocket(url); } catch (e) { return; }
+
+    ws.onopen = function () {
+      document.getElementById('timer-source').textContent = '服务端推送中';
+    };
+    ws.onmessage = function (ev) {
+      var msg;
+      try { msg = JSON.parse(ev.data); } catch (e) { return; }
+      if (msg.type === 'COUNTDOWN') {
+        serverDriven = true;
+        setTimerText(msg.remaining);
+      } else if (msg.type === 'TIMEOUT') {
+        serverDriven = true;
+        setTimerText(0);
+        autoSubmitIfNeeded();
+      }
+    };
+    ws.onerror = function () { document.getElementById('timer-source').textContent = '本地计时（WebSocket 不可用）'; };
+    ws.onclose = function () {
+      if (!serverDriven) {
+        document.getElementById('timer-source').textContent = '本地计时（WebSocket 未连接）';
+      } else {
+        document.getElementById('timer-source').textContent = '本地计时（连接已断开）';
+      }
+    };
+  }
+
+  function setTimerText(remain) {
+    document.getElementById('timer').textContent = UI.fmtDuration(remain);
+    var bar = document.getElementById('timer-bar');
+    if (remain <= 300) { bar.classList.add('urgent'); } else { bar.classList.remove('urgent'); }
+  }
+
+  /* ---------------------------------------------------- 交卷 */
+
+  var autoSubmitting = false;
+  function autoSubmitIfNeeded() {
+    if (submitted || autoSubmitting) { return; }
+    autoSubmitting = true;
+    UI.toast('考试时间已到，正在自动交卷…', 'warn');
+    doSubmit(true);
+  }
+
+  function doSubmit(isAuto) {
+    if (submitted) { return; }
+    if (!isAuto) {
+      var unanswered = questions.length - Object.keys(answers).length;
+      if (unanswered > 0) {
+        // 交卷不可逆 —— 用应用内的确认弹窗（原生 confirm 不在 DOM 里，
+        // 自动化探测/读屏都看不到，会被误判成「没有确认就直接交卷」）
+        UI.confirm({
+          title: '确认交卷',
+          text: '还有 ' + unanswered + ' 道题未作答，交卷后不能再修改，确定交卷吗？',
+          okText: '交卷',
+          danger: true
+        }).then(function (ok) { if (ok) { reallySubmit(); } });
+        return;
+      }
+    }
+    reallySubmit();
+  }
+
+  function reallySubmit() {
+    if (submitted) { return; }
+    submitted = true;
+    setButtonsDisabled(true);
+
+    // 把所有题（含未作答）都收集一遍，保证漏改的输入框也被采集
+    questions.forEach(function (q) { collectOne(q.id); });
+
+    API.post('/api/exams/submit', { recordId: Number(recordId), answers: answers }, {
+      headers: { 'X-Request-Id': UI.uuid() }
+    }).then(function () {
+      UI.toast('交卷成功，正在打开成绩单…', 'success');
+      setTimeout(function () {
+        location.replace('/student/scores.html?recordId=' + recordId);
+      }, 600);
+    }).catch(function (err) {
+      UI.toast('交卷失败：' + err.message, 'error');
+      submitted = false;
+      setButtonsDisabled(false);
+    });
+  }
+
+  function setButtonsDisabled(disabled) {
+    ['btn-submit', 'btn-submit-top'].forEach(function (id) {
+      var b = document.getElementById(id);
+      if (b) { b.disabled = disabled; }
+    });
+  }
+
+  /* ---------------------------------------------------- 事件绑定 */
+
+  document.getElementById('sheet').addEventListener('click', function (ev) {
+    var cell = ev.target.closest('.sheet-cell');
+    if (!cell) { return; }
+    var el = document.getElementById('q-' + cell.getAttribute('data-jump'));
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+  document.getElementById('btn-submit').addEventListener('click', function () { doSubmit(false); });
+  document.getElementById('btn-submit-top').addEventListener('click', function () { doSubmit(false); });
+
+  window.addEventListener('beforeunload', function (ev) {
+    // 作答会实时暂存，这里更多是防「误关标签页」而非防丢数据
+    flushDraft(true);
+    if (!submitted && Object.keys(answers).length > 0) {
+      ev.preventDefault();
+      ev.returnValue = '';
+      return '';
+    }
+  });
+
+  /* ---------------------------------------------------- 答案自动暂存
+   *
+   * 为什么需要：作答此前只存在浏览器内存里，刷新 / 崩溃 / 网络抖动 /
+   * 被超时任务命中，学生答的几十分钟全部作废。现在每次改动都会去抖后
+   * 暂存到服务端（只写作答文本，不改考试状态、不触发判分），
+   * 重新打开答题页时再回填。
+   *
+   * 三个时机：改动后去抖 1.5 秒、每 30 秒兜底、页面隐藏/卸载时立刻一次。
+   * 卸载时用 fetch + keepalive（sendBeacon 无法带 Authorization 头，会 401）。
+   */
+
+  var draftDirty = {};    // qid -> true，只提交有变化的题
+  var draftTimer = null;
+
+  function markDraftDirty(qid) {
+    draftDirty[qid] = true;
+    if (draftTimer) { return; }
+    // 连续输入合并成一次请求：点选项时不会每点一下打一个接口
+    draftTimer = setTimeout(function () { draftTimer = null; flushDraft(false); }, 1500);
+  }
+
+  function setDraftStatus(text, tone) {
+    var el = document.getElementById('draft-status');
+    if (!el) { return; }
+    el.textContent = text;
+    el.style.color = tone || '';
+  }
+
+  function clockNow() {
+    var d = new Date();
+    function p(n) { return n < 10 ? '0' + n : '' + n; }
+    return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+
+  function flushDraft(useKeepalive) {
+    if (submitted) { return; }
+
+    var sent = {};
+    Object.keys(draftDirty).forEach(function (qid) {
+      sent[qid] = answers[qid] || '';
+    });
+    var ids = Object.keys(sent);
+    if (!ids.length) { return; }
+
+    // 先清标记再发请求：请求期间新产生的改动会被重新标记，不会被这次成功误清
+    draftDirty = {};
+    setDraftStatus('暂存中…');
+
+    var headers = { 'Content-Type': 'application/json;charset=UTF-8' };
+    var token = Store.getToken();
+    if (token) { headers.Authorization = 'Bearer ' + token; }
+
+    fetch('/api/exams/records/' + recordId + '/draft', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ answers: sent }),
+      keepalive: !!useKeepalive
+    }).then(function (res) {
+      if (!res.ok) { throw new Error('HTTP ' + res.status); }
+      setDraftStatus('已暂存 ' + clockNow());
+    }).catch(function () {
+      // 存失败就把这批重新标脏，等下一次（去抖 / 定时 / 卸载）再试
+      ids.forEach(function (qid) { draftDirty[qid] = true; });
+      setDraftStatus('暂存失败，稍后重试', 'var(--danger)');
+    });
+  }
+
+  /** 读回暂存并回填到答题卡（失败不影响正常答题） */
+  function restoreDraft() {
+    return API.get('/api/exams/records/' + recordId + '/draft').then(function (res) {
+      var saved = (res && res.answers) || {};
+      var restored = 0;
+      Object.keys(saved).forEach(function (qid) {
+        var q = questions.filter(function (x) { return String(x.id) === String(qid); })[0];
+        if (!q) { return; }
+        var value = saved[qid];
+        if (q.type === TYPE_FILL || q.type === TYPE_ESSAY) {
+          var ta = document.querySelector('textarea[data-input="' + qid + '"]');
+          if (ta) { ta.value = value; }
+        } else if (q.type === TYPE_MULTIPLE) {
+          // 多选暂存的是按字母升序拼接的串
+          Array.prototype.forEach.call(
+            document.querySelectorAll('input[data-input="' + qid + '"]'),
+            function (inp) { inp.checked = value.indexOf(inp.value) >= 0; });
+        } else {
+          Array.prototype.forEach.call(
+            document.querySelectorAll('input[data-input="' + qid + '"]'),
+            function (inp) { inp.checked = (inp.value === value); });
+        }
+        answers[qid] = value;
+        restored++;
+      });
+      if (restored > 0) {
+        renderSheet();
+        setDraftStatus('已恢复 ' + restored + ' 道题的暂存作答');
+      }
+    }).catch(function () {
+      // 读不到暂存（例如刚开考，或服务端暂时不可用）不影响作答
+    });
+  }
+
+  setInterval(function () { flushDraft(false); }, 30000);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') { flushDraft(true); }
+  });
+
+  // 已在别处登录过就直接进主页
+  load();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登录 · 在线考试系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="login-wrap split">
+
+  <!-- 左侧刊头：品牌识别 + 能力说明（纯 CSS 装饰，不引图片资源） -->
+  <aside class="login-aside">
+    <div>
+      <div class="aside-seal">考</div>
+      <h1 class="aside-title">在线考试系统</h1>
+      <p class="aside-sub">Online Examination System</p>
+      <div class="aside-rule"></div>
+      <!-- 编号条目：装饰用编号 + 文字，不用勾选图标（图标风格统一反而最像模板） -->
+      <div class="aside-feats">
+        <div class="aside-feat">
+          <span class="no">01</span>
+          <span><b>智能组卷</b>　按题型与难度 5:3:2 权重抽题，卷面分值发布即快照</span>
+        </div>
+        <div class="aside-feat">
+          <span class="no">02</span>
+          <span><b>限时监考</b>　服务端校验时限、超时自动收卷，断线重连不重置计时</span>
+        </div>
+        <div class="aside-feat">
+          <span class="no">03</span>
+          <span><b>判分与复核</b>　客观题即时判分，主观题支持 AI 评分并由教师复核</span>
+        </div>
+        <div class="aside-feat">
+          <span class="no">04</span>
+          <span><b>公式渲染</b>　本地 KaTeX 离线渲染，数学题面不失真</span>
+        </div>
+        <div class="aside-feat">
+          <span class="no">05</span>
+          <span><b>答题暂存</b>　作答实时存到服务端，刷新或断线后自动回填</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <!-- 用真实数据当装饰：内置模拟卷的卷面构成（而不是空洞的几何图形） -->
+      <div class="aside-data">
+        <div class="aside-data-title">内置模拟卷构成 · 每卷 25 题 / 满分 100</div>
+        <table>
+          <tr><td>单选题　10 题 × 3 分</td><td>30</td></tr>
+          <tr><td>多选题　4 题 × 5 分</td><td>20</td></tr>
+          <tr><td>判断题　4 题 × 3 分</td><td>12</td></tr>
+          <tr><td>填空题　4 题 × 5 分</td><td>20</td></tr>
+          <tr><td>简答题　3 题 × 6 分</td><td>18</td></tr>
+        </table>
+      </div>
+      <p class="aside-foot">
+        四川专升本 · 高等数学 / 英语 / 计算机基础<br>
+        教学演示版本 · 演示账号仅限内网使用
+      </p>
+    </div>
+  </aside>
+
+  <!-- 右侧表单 -->
+  <main class="login-main">
+    <div class="login-box">
+      <div class="login-brandline">
+        <span class="mark">考</span>
+        <span>
+          <b>在线考试系统</b>
+          <span>ONLINE EXAM SYSTEM</span>
+        </span>
+      </div>
+
+      <h2 class="login-title">欢迎回来</h2>
+      <p class="login-sub">教师与学生统一入口，登录后按角色进入对应工作台</p>
+
+      <!-- 服务端返回的错误集中显示在这里，而不是只弹一个会消失的 toast -->
+      <div class="alert alert-danger" id="login-error" style="display:none;margin-bottom:18px"></div>
+
+      <div class="login-tabs">
+        <div id="tab-login" class="active">登录</div>
+        <div id="tab-register">注册</div>
+      </div>
+
+      <!-- 登录 -->
+      <form id="form-login" novalidate>
+        <div class="form-row" id="row-lg-username">
+          <label for="lg-username">用户名</label>
+          <input type="text" id="lg-username" autocomplete="username" maxlength="50" placeholder="请输入用户名">
+          <div class="field-error" id="err-lg-username"></div>
+        </div>
+
+        <div class="form-row" id="row-lg-password">
+          <label for="lg-password">密码</label>
+          <div class="input-affix">
+            <input type="password" id="lg-password" autocomplete="current-password" maxlength="50" placeholder="请输入密码">
+            <button type="button" class="affix-btn" id="toggle-lg-password" aria-label="显示密码" aria-pressed="false"></button>
+          </div>
+          <div class="field-error" id="err-lg-password"></div>
+        </div>
+
+        <div class="form-extras">
+          <label class="checkbox-line">
+            <input type="checkbox" id="lg-remember"> 记住用户名
+          </label>
+          <span class="muted" style="font-size:12px">忘记密码请联系教务；已登录可在右上角用户菜单自助修改</span>
+        </div>
+
+        <button type="submit" class="btn btn-block" id="btn-login">登 录</button>
+      </form>
+
+      <!-- 注册 -->
+      <form id="form-register" style="display:none" novalidate>
+        <div class="form-row" id="row-rg-username">
+          <label for="rg-username">用户名</label>
+          <input type="text" id="rg-username" autocomplete="username" required minlength="3" maxlength="50" placeholder="3-50 位">
+          <div class="field-error" id="err-rg-username"></div>
+        </div>
+
+        <div class="form-row" id="row-rg-realname">
+          <label for="rg-realname">真实姓名<span class="muted">（可选）</span></label>
+          <input type="text" id="rg-realname" autocomplete="name" maxlength="50" placeholder="用于成绩单展示">
+        </div>
+
+        <div class="form-row" id="row-rg-password">
+          <label for="rg-password">密码</label>
+          <div class="input-affix">
+            <input type="password" id="rg-password" autocomplete="new-password" required minlength="6" maxlength="50" placeholder="6-50 位">
+            <button type="button" class="affix-btn" id="toggle-rg-password" aria-label="显示密码" aria-pressed="false"></button>
+          </div>
+          <div class="field-error" id="err-rg-password"></div>
+        </div>
+
+        <div class="form-row" id="row-rg-email">
+          <label for="rg-email">邮箱<span class="muted">（可选）</span></label>
+          <input type="email" id="rg-email" autocomplete="email" maxlength="100" placeholder="example@school.edu.cn">
+          <div class="field-error" id="err-rg-email"></div>
+        </div>
+
+        <p class="hint muted" style="margin:0 0 15px">
+          注册接口只创建「学生」账号，无法自行注册为教师。
+        </p>
+
+        <!-- 人脸采集（V3）：启用门禁时才显示，见页尾脚本 -->
+        <div class="form-row" id="row-rg-face" style="display:none">
+          <label>人脸采集<span class="muted">（注册后用于开考前的核验：按提示慢慢转头）</span></label>
+          <div class="face-capture">
+            <div class="face-stage">
+              <video id="rg-face-video" playsinline autoplay muted></video>
+              <img id="rg-face-preview" alt="采集结果" style="display:none">
+              <div class="face-placeholder" id="rg-face-placeholder">
+                点「开始采集」，把脸放入框内并按提示慢慢转头
+              </div>
+            </div>
+            <div class="face-progress" style="margin-bottom:8px"><i id="rg-face-bar"></i></div>
+            <div class="face-hint" id="rg-face-hint"></div>
+            <div class="face-actions">
+              <button type="button" class="btn btn-sm" id="rg-face-capture">开始采集</button>
+              <button type="button" class="btn-text" id="rg-face-recapture" style="display:none">重新采集</button>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-block" id="btn-register">注 册</button>
+      </form>
+
+      <!-- 演示账号一键填入。
+       ★ 这段脚本刻意放在按钮**之前**、且**不依赖 /js/api.js**：
+       按钮一被解析出来就是可点的，而 api.js（在页面底部）这时可能还在下载，
+       中间那段窗口里的点击会静默丢失 —— 旧写法把监听挂在底部脚本里，
+       实测「刚打开页面就点」6 次里有 1 次没反应（Bug 5）。
+       这里只碰 DOM，不调用任何外部依赖，所以不存在时序窗口。 -->
+  <script>
+    window.fillDemoAccount = function (chip) {
+      var user = chip.getAttribute('data-user') || '';
+      var u = document.getElementById('lg-username');
+      var p = document.getElementById('lg-password');
+      if (u) { u.value = user; }
+      if (p) { p.value = '123456'; }
+      // 切回登录页签（同时点两个页签的样式，不依赖底部脚本里的 tabLogin）
+      var tabLogin = document.getElementById('tab-login');
+      var tabReg = document.getElementById('tab-register');
+      var formLogin = document.getElementById('form-login');
+      var formReg = document.getElementById('form-register');
+      if (tabLogin && tabReg) { tabLogin.classList.add('active'); tabReg.classList.remove('active'); }
+      if (formLogin) { formLogin.style.display = ''; }
+      if (formReg) { formReg.style.display = 'none'; }
+      // 清掉残留的字段级报错与服务端错误条（不能调 clearAllErrors：
+      // 那个函数在页面底部才定义，这一段必须自给自足）
+      Array.prototype.forEach.call(document.querySelectorAll('.form-row.invalid'), function (row) {
+        row.classList.remove('invalid');
+      });
+      var box = document.getElementById('login-error');
+      if (box) { box.style.display = 'none'; }
+      var btn = document.getElementById('btn-login');
+      if (btn && btn.focus) { btn.focus(); }
+    };
+  </script>
+
+  <div class="demo-hint">
+    <div class="demo-hint-title">演示账号 · 口令均为 <code>123456</code></div>
+    <div class="demo-chips">
+      <button type="button" class="demo-chip" data-user="admin" onclick="window.fillDemoAccount(this)"><b>admin</b><span>管理员</span></button>
+      <button type="button" class="demo-chip" data-user="teacher1" onclick="window.fillDemoAccount(this)"><b>teacher1</b><span>教师</span></button>
+      <button type="button" class="demo-chip" data-user="student01" onclick="window.fillDemoAccount(this)"><b>student01</b><span>学生</span></button>
+      <button type="button" class="demo-chip" data-user="student02" onclick="window.fillDemoAccount(this)"><b>student02</b><span>学生</span></button>
+    </div>
+    <div class="demo-hint-tip">点击任一账号可自动填入下方表单</div>
+  </div>
+    </div>
+  </main>
+
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  // ---------------------------------------------------------------
+  //  静态资源加载守卫
+  //
+  //  如果 /js/api.js 没能加载（被安全软件、代理或浏览器扩展挡掉），
+  //  页面上的 API / Store / Auth 全是 undefined：
+  //  点「登录」时 e.preventDefault() 已经执行，紧接着访问 API 就抛异常，
+  //  结果是「不提交、不刷新、不跳转、也没提示」——看起来就像按钮坏了。
+  //  这种静默失败极难排查，所以这里主动检测并给出可见提示。
+  // ---------------------------------------------------------------
+  if (typeof API === 'undefined' || typeof Store === 'undefined') {
+    document.addEventListener('DOMContentLoaded', function () {
+      var box = document.createElement('div');
+      box.className = 'alert alert-danger';
+      box.style.marginBottom = '18px';
+      box.innerHTML = '<strong>页面脚本 /js/api.js 加载失败</strong><br>'
+        + '登录按钮不会有任何反应。常见原因：安全软件 / 浏览器扩展 / 代理拦截了本机请求。<br>'
+        + '请按 <code>Ctrl + F5</code> 强制刷新；仍不行请打开 F12 控制台查看 Network 里 api.js 的状态。';
+      var form = document.getElementById('form-login');
+      if (form && form.parentNode) { form.parentNode.insertBefore(box, form); }
+    });
+  }
+</script>
+<script>
+  // 登录后要跳回的目标。
+  // ★ 必须丢掉「指向登录页自己」的值：401 曾经会把登录页跳成
+  //   `login.html?redirect=%2Flogin.html`，于是**登录成功也跳回登录页**
+  //   （看起来就是「点了登录没反应」）。同时只接受站内路径，
+  //   避免 `?redirect=https://evil.example` 这类开放重定向。
+  var redirect = (function () {
+    var raw = new URLSearchParams(location.search).get('redirect');
+    if (!raw || raw.charAt(0) !== '/') { return null; }
+    if (raw.charAt(1) === '/' || raw.charAt(1) === '\\') { return null; }  // //host、/\host
+    if (/^\/login\.html([?#]|$)/i.test(raw)) { return null; }
+    return raw;
+  })();
+  var REMEMBER_KEY = 'exam.rememberUsername';
+
+  var tabLogin = document.getElementById('tab-login');
+  var tabReg = document.getElementById('tab-register');
+  var formLogin = document.getElementById('form-login');
+  var formReg = document.getElementById('form-register');
+  var errorBox = document.getElementById('login-error');
+
+  /* ---------------------------------------------------- 眼睛图标 */
+  var EYE_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.2A9.9 9.9 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 3.9M6.3 6.4A17 17 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 4.6-1.1"/><path d="M3 3l18 18"/></svg>';
+
+  function bindPasswordToggle(btnId, inputId) {
+    var btn = document.getElementById(btnId);
+    var input = document.getElementById(inputId);
+    if (!btn || !input) { return; }
+    btn.innerHTML = EYE_OPEN;
+    btn.addEventListener('click', function () {
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.innerHTML = show ? EYE_OFF : EYE_OPEN;
+      btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+      btn.setAttribute('aria-label', show ? '隐藏密码' : '显示密码');
+      input.focus();
+    });
+  }
+  bindPasswordToggle('toggle-lg-password', 'lg-password');
+  bindPasswordToggle('toggle-rg-password', 'rg-password');
+
+  /* ---------------------------------------------------- 字段级校验 */
+  function setError(rowId, errId, message) {
+    var row = document.getElementById(rowId);
+    var err = document.getElementById(errId);
+    if (row) { row.classList.add('invalid'); }
+    if (err) { err.textContent = message; }
+  }
+
+  function clearError(rowId) {
+    var row = document.getElementById(rowId);
+    if (row) { row.classList.remove('invalid'); }
+  }
+
+  function clearAllErrors() {
+    ['row-lg-username', 'row-lg-password', 'row-rg-username', 'row-rg-password',
+     'row-rg-email'].forEach(clearError);
+    hideServerError();
+  }
+
+  function showServerError(message) {
+    if (!errorBox) { return; }
+    errorBox.textContent = message;
+    errorBox.style.display = '';
+  }
+
+  function hideServerError() {
+    if (errorBox) { errorBox.style.display = 'none'; }
+  }
+
+  // 边输入边消错：不用等再次提交才知道已经改对了
+  ['lg-username', 'lg-password'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('input', function () { clearError('row-' + id); hideServerError(); }); }
+  });
+  ['rg-username', 'rg-password', 'rg-email'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('input', function () { clearError('row-' + id); hideServerError(); }); }
+  });
+
+  /** 校验登录表单；返回 true 表示可以提交 */
+  function validateLogin() {
+    clearAllErrors();
+    var ok = true;
+    var username = document.getElementById('lg-username').value.trim();
+    var password = document.getElementById('lg-password').value;
+
+    if (!username) {
+      setError('row-lg-username', 'err-lg-username', '请输入用户名'); ok = false;
+    } else if (username.length < 3) {
+      setError('row-lg-username', 'err-lg-username', '用户名至少 3 位'); ok = false;
+    }
+    if (!password) {
+      setError('row-lg-password', 'err-lg-password', '请输入密码'); ok = false;
+    } else if (password.length < 6) {
+      setError('row-lg-password', 'err-lg-password', '密码至少 6 位'); ok = false;
+    }
+    if (!ok) {
+      var firstInvalid = document.querySelector('.form-row.invalid input');
+      if (firstInvalid) { firstInvalid.focus(); }
+    }
+    return ok;
+  }
+
+  /** 校验注册表单；返回 true 表示可以提交 */
+  function validateRegister() {
+    clearAllErrors();
+    var ok = true;
+    var username = document.getElementById('rg-username').value.trim();
+    var password = document.getElementById('rg-password').value;
+    var email = document.getElementById('rg-email').value.trim();
+
+    if (!username) {
+      setError('row-rg-username', 'err-rg-username', '请输入用户名'); ok = false;
+    } else if (username.length < 3 || username.length > 50) {
+      setError('row-rg-username', 'err-rg-username', '用户名需要 3-50 位'); ok = false;
+    }
+    if (!password) {
+      setError('row-rg-password', 'err-rg-password', '请输入密码'); ok = false;
+    } else if (password.length < 6 || password.length > 50) {
+      setError('row-rg-password', 'err-rg-password', '密码需要 6-50 位'); ok = false;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('row-rg-email', 'err-rg-email', '邮箱格式不正确'); ok = false;
+    }
+    if (!ok) {
+      var firstInvalid = document.querySelector('.form-row.invalid input');
+      if (firstInvalid) { firstInvalid.focus(); }
+    }
+    return ok;
+  }
+
+  /* ---------------------------------------------------- 切换登录 / 注册 */
+  tabLogin.addEventListener('click', function () {
+    tabLogin.classList.add('active'); tabReg.classList.remove('active');
+    formLogin.style.display = ''; formReg.style.display = 'none';
+    clearAllErrors();
+  });
+  tabReg.addEventListener('click', function () {
+    tabReg.classList.add('active'); tabLogin.classList.remove('active');
+    formReg.style.display = ''; formLogin.style.display = 'none';
+    clearAllErrors();
+  });
+
+  /* ---------------------------------------------------- 记住用户名 */
+  (function restoreRemembered() {
+    var saved = '';
+    try { saved = localStorage.getItem(REMEMBER_KEY) || ''; } catch (e) { /* 隐私模式 */ }
+    if (saved) {
+      document.getElementById('lg-username').value = saved;
+      document.getElementById('lg-remember').checked = true;
+    }
+  })();
+
+  function rememberUsername() {
+    var box = document.getElementById('lg-remember');
+    var name = document.getElementById('lg-username').value.trim();
+    try {
+      if (box && box.checked && name) { localStorage.setItem(REMEMBER_KEY, name); }
+      else { localStorage.removeItem(REMEMBER_KEY); }
+    } catch (e) { /* 隐私模式忽略 */ }
+  }
+
+  /* ---------------------------------------------------- 演示账号：一键填入 */
+  // 填充逻辑在**标记里那段脚本**（`window.fillDemoAccount`，放在按钮之前）：
+  // 它必须早于 /js/api.js 可用，否则「刚打开页面就点」会丢点击（Bug 5）。
+  // 这里不再挂监听，避免同一动作被处理两次。
+
+  /* ---------------------------------------------------- 提交状态 */
+  function setBusy(btn, busy, busyText, idleText) {
+    if (!btn) { return; }
+    btn.disabled = busy;
+    btn.innerHTML = busy ? '<span class="btn-spin"></span>' + busyText : idleText;
+  }
+
+  function afterLogin(vo) {
+    Store.save(vo);
+    rememberUsername();
+    UI.toast('登录成功，欢迎 ' + (vo.realName || vo.username), 'success');
+    var target = redirect || Auth.homeFor(vo.role);
+    setTimeout(function () { location.href = target; }, 400);
+  }
+
+  /* ---------------------------------------------------- 登录 */
+  formLogin.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!validateLogin()) { return; }
+    var btn = document.getElementById('btn-login');
+    setBusy(btn, true, '登录中…', '登 录');
+
+    API.post('/api/auth/login', {
+      username: document.getElementById('lg-username').value.trim(),
+      password: document.getElementById('lg-password').value
+    },
+    // ★ 登录接口的 401 是「口令不对」，不是「登录态过期」：
+    //   默认的 401 处理会把页面跳向登录页自己（redirect 指向本页），
+    //   表单被清空、下面的错误提示还没显示就被导航抹掉 ——
+    //   用户看到的就是「点了登录毫无反应」。这里禁止它自动跳转，
+    //   让 .catch 里的提示留在当前页面（Bug 2）。
+    { redirectOn401: false })
+      .then(afterLogin)
+      .catch(function (err) {
+        // 失败原因同时落到页面上（toast 会消失，页面提示不会）
+        showServerError('登录失败：' + err.message);
+        UI.toast(err.message, 'error');
+        var pwd = document.getElementById('lg-password');
+        if (pwd) { pwd.focus(); pwd.select(); }
+      })
+      .then(function () { setBusy(btn, false, '', '登 录'); });
+  });
+
+  /* ---------------------------------------------------- 注册 */
+  formReg.addEventListener('submit', function (e) {
+    e.preventDefault();
+    // 人脸配置还没取回来时先等它 —— 否则「配置在路上」的那几百毫秒里点提交，
+    // 就能绕开「注册必须先采集人脸」这道前端校验
+    if (faceCfg === null) {
+      faceCfgPromise.then(doRegister);
+      return;
+    }
+    doRegister();
+  });
+
+  function doRegister() {
+    if (!validateRegister()) { return; }
+    if (faceCfg.enabled && !faceImage) {
+      showServerError('请先完成人脸采集（点上方「开始采集」并按提示慢慢转头）');
+      UI.toast('请先完成人脸采集', 'error');
+      return;
+    }
+    var btn = document.getElementById('btn-register');
+    setBusy(btn, true, '注册中…', '注 册');
+
+    API.post('/api/auth/register', {
+      username: document.getElementById('rg-username').value.trim(),
+      realName: document.getElementById('rg-realname').value.trim(),
+      password: document.getElementById('rg-password').value,
+      email: document.getElementById('rg-email').value.trim()
+    }, { redirectOn401: false }).then(function (user) {
+      UI.toast('注册成功，正在自动登录…', 'success');
+      // 注册完直接用同一口令登录，省得用户再输一遍
+      return API.post('/api/auth/login', {
+        username: user.username,
+        password: document.getElementById('rg-password').value
+      }, { redirectOn401: false }).then(function (loginVo) {
+        // 登录态到手后立刻把底片写进库：注册接口本身不接收人脸，
+        // 这样「注册」与「采集」是两步，但用户只感知一次
+        if (!faceCfg.enabled || !faceImage) { return afterLogin(loginVo); }
+        Store.setLogin(loginVo);
+        return API.post('/api/face/enroll', { imageBase64: faceImage, liveness: true, source: 'ENROLL' })
+          .then(function () {
+            UI.toast('人脸底片已录入', 'success');
+            return afterLogin(loginVo);
+          })
+          .catch(function (err) {
+            // 底片录入失败不该吞掉「注册成功」这个事实：先放人进去，让他到「人脸录入」页补
+            UI.toast('人脸底片录入失败：' + err.message + '（可登录后在「人脸录入」页补录）', 'error');
+            return afterLogin(loginVo);
+          });
+      });
+    })
+      .catch(function (err) {
+        showServerError('注册失败：' + err.message);
+        UI.toast(err.message, 'error');
+      })
+      .then(function () { setBusy(btn, false, '', '注 册'); });
+  }
+
+  /* ---------------------------------------------------- 注册时的人脸采集（V3） */
+
+  var faceCfg = null;          // null = 配置未取回；{enabled:...} = 已知
+  var faceImage = null;        // 采集到的 base64
+  var rowFace = document.getElementById('row-rg-face');
+  var rgVideo = document.getElementById('rg-face-video');
+  var rgPreview = document.getElementById('rg-face-preview');
+  var rgPlaceholder = document.getElementById('rg-face-placeholder');
+  var rgHint = document.getElementById('rg-face-hint');
+  var rgCaptureBtn = document.getElementById('rg-face-capture');
+  var rgRecaptureBtn = document.getElementById('rg-face-recapture');
+
+  function setFaceHint(text, kind) {
+    rgHint.className = 'face-hint' + (kind ? ' is-' + kind : '');
+    rgHint.textContent = text;
+  }
+
+  /** 人脸库按需加载（1.3MB）：只有门禁开着、且用户真去采集时才拉 */
+  function ensureFaceLibs() {
+    if (window.FaceLiveness) { return Promise.resolve(); }
+    function loadScript(src) {
+      return new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = function () { reject(new Error('加载失败：' + src)); };
+        document.head.appendChild(s);
+      });
+    }
+    return loadScript('/vendor/face-api/face-api.js').then(function () {
+      return loadScript('/js/face-liveness.js');
+    });
+  }
+
+  var faceCfgPromise = API.get('/api/face/config').then(function (cfg) {
+    faceCfg = cfg || { enabled: false };
+    if (faceCfg.enabled) {
+      rowFace.style.display = '';
+      setFaceHint('本系统要求注册时采集人脸：点「开始采集」后按提示慢慢转头。');
+    }
+    return faceCfg;
+  }).catch(function () {
+    // 配置取不到时按「未启用」处理：不能让一个配置接口故障把注册整个堵死
+    faceCfg = { enabled: false };
+    return faceCfg;
+  });
+
+  rgCaptureBtn.addEventListener('click', function () {
+    if (!window.FaceLiveness && !ensureFaceLibs) { return; }
+    rgCaptureBtn.disabled = true;
+    rgPlaceholder.style.display = 'none';
+    setFaceHint('正在准备摄像头与人脸库…');
+    ensureFaceLibs().then(function () {
+      return FaceLiveness.capture({
+        video: rgVideo,
+        modelPath: '/vendor/face-api/model',
+        onHint: function (t) { setFaceHint(t); },
+        onProgress: function (p) {
+          var bar = document.getElementById('rg-face-bar');
+          if (bar && typeof p.percent === 'number') {
+            bar.style.width = p.percent + '%';
+            bar.parentNode.className = 'face-progress' + (p.percent >= 100 ? ' is-done' : '');
+          }
+        }
+      });
+    }).then(function (result) {
+      faceImage = result.imageBase64;
+      rgPreview.src = faceImage;
+      rgPreview.style.display = 'block';
+      rgVideo.style.display = 'none';
+      rgCaptureBtn.style.display = 'none';
+      rgRecaptureBtn.style.display = '';
+      setFaceHint('采集成功（活体已通过），注册时会一并保存。', 'ok');
+    }).catch(function (err) {
+      var map = {
+        PERMISSION_DENIED: '摄像头权限被拒绝：请在浏览器允许摄像头（手机需用 HTTPS 打开本站）',
+        NO_CAMERA: '没有找到可用的摄像头',
+        NO_FACE: '没有检测到人脸，请正对镜头、保证光线后重试',
+        CANCELLED: '已取消采集',
+        NO_BLINK: '没有检测到眨眼，请按提示正常眨一次眼'
+      };
+      setFaceHint(map[err && err.code] || ('采集失败：' + (err && err.message ? err.message : '未知错误')), 'bad');
+      rgPlaceholder.style.display = 'flex';
+      rgCaptureBtn.disabled = false;
+    });
+  });
+
+  rgRecaptureBtn.addEventListener('click', function () {
+    if (window.FaceLiveness) { FaceLiveness.stop(rgVideo); }
+    faceImage = null;
+    rgPreview.style.display = 'none';
+    rgPreview.removeAttribute('src');
+    rgVideo.style.display = 'block';
+    rgPlaceholder.style.display = 'flex';
+    rgRecaptureBtn.style.display = 'none';
+    rgCaptureBtn.style.display = '';
+    rgCaptureBtn.disabled = false;
+    setFaceHint('已清除，请重新采集。');
+  });
+
+  // 已在别处登录过就直接进主页
+  if (Store.getToken() && Store.getUser() && !redirect) {
+    location.replace(Auth.homeFor(Store.getUser().role));
+  }
+</script>
+</body>
+</html>

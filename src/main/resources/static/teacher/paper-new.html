@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智能组卷 · 在线考试系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="container">
+  <div class="crumbs"><a href="/teacher/exams.html">考试管理</a> / 智能组卷</div>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">智能组卷</h1>
+      <p class="page-sub">
+        按「题型 + 数量 + 每题分值」配置抽题规则，系统按难度权重
+        <strong>简单 : 中等 : 困难 = 5 : 3 : 2</strong> 随机抽题；
+        某难度题目不够时自动向相邻难度借调。
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="card-title">基本信息</h3>
+    <div class="form-row" id="row-f-title">
+      <label>考试名称</label>
+      <input type="text" id="f-title" placeholder="例如 一元函数积分学专项训练">
+      <div class="field-error" id="err-f-title"></div>
+    </div>
+    <div class="form-row">
+      <label>试卷类型</label>
+      <select id="f-paper-type">
+        <option value="模拟卷">模拟卷</option>
+        <option value="专项训练">专项训练（按知识点出卷）</option>
+      </select>
+      <div class="hint">只影响分类与展示；要出专项卷，请在下面的规则里选「知识点」。</div>
+    </div>
+    <div class="form-row">
+      <label>说明<span class="muted">（可选）</span></label>
+      <textarea id="f-desc" rows="2" placeholder="展示在学生端考试列表"></textarea>
+    </div>
+    <div class="form-grid">
+      <div class="form-row" id="row-f-bank">
+        <label>题库</label>
+        <select id="f-bank"><option value="">加载中…</option></select>
+        <div class="field-error" id="err-f-bank"></div>
+      </div>
+      <div class="form-row" id="row-f-duration">
+        <label>考试时长（分钟）</label>
+        <input type="number" id="f-duration" min="1" value="60">
+        <div class="field-error" id="err-f-duration"></div>
+      </div>
+      <div class="form-row">
+        <label>及格分</label>
+        <input type="number" id="f-pass" min="0" placeholder="留空则按总分 60% 自动">
+        <div class="hint">不能高于总分</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:6px">
+      <h3 class="card-title" style="margin:0">抽题规则</h3>
+      <button class="btn btn-ghost btn-sm" id="btn-add-rule">+ 添加规则</button>
+    </div>
+    <p class="muted" style="font-size:12px;margin:0 0 14px">
+      同一题型只能配置一条规则（两条规则可能抽到同一道题，也让「每题分值」变得含糊）。
+    </p>
+    <div id="rules"></div>
+    <div class="stat-grid" style="margin-top:16px">
+      <div class="stat"><div class="stat-num" id="sum-count">0</div><div class="stat-label">总题数</div></div>
+      <div class="stat"><div class="stat-num" id="sum-score">0</div><div class="stat-label">总分</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="btn-row">
+      <button class="btn" id="btn-generate">生成试卷（草稿）</button>
+      <a class="btn btn-ghost" href="/teacher/exams.html">返回列表</a>
+    </div>
+    <p class="muted" style="font-size:12px;margin:12px 0 0">
+      生成的试卷是<strong>草稿</strong>状态，学生看不见；确认无误后在「考试管理」里点「发布」。
+    </p>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+(function () {
+  Auth.requireRole('teacher');
+  UI.renderNav('teacher', 'paper-new');
+
+  var TYPE_NAME = { 0: '单选题', 1: '多选题', 2: '判断题', 3: '填空题', 4: '简答题' };
+
+  function loadBanks() {
+    return API.get('/api/banks').then(function (list) {
+      var sel = document.getElementById('f-bank');
+      if (!list || !list.length) {
+        sel.innerHTML = '<option value="">（还没有题库）</option>';
+        UI.toast('还没有题库，请先去「题库管理」新建并录入题目', 'warn');
+        return;
+      }
+      sel.innerHTML = list.map(function (b) {
+        return '<option value="' + b.id + '">' + UI.esc(b.name) + (b.subject ? '（' + UI.esc(b.subject) + '）' : '') + '</option>';
+      }).join('');
+    });
+  }
+
+  var ruleSeq = 0;
+  /** 当前题库的知识点（[{category,total}]），做题干下方规则里的「知识点」下拉 */
+  var currentCategories = [];
+
+  function loadCategories() {
+    var bankId = document.getElementById('f-bank').value;
+    if (!bankId) { currentCategories = []; return Promise.resolve(); }
+    return API.get('/api/questions/categories?bankId=' + bankId).then(function (list) {
+      currentCategories = list || [];
+      // 规则行里的下拉要跟着换（切题库后原来的知识点可能不存在了）
+      document.querySelectorAll('#rules .rule-row').forEach(function (row) {
+        var sel = row.querySelector('.r-category');
+        if (!sel) { return; }
+        var keep = sel.value;
+        sel.innerHTML = categoryOptionsHtml(keep);
+        if (keep && !currentCategories.some(function (c) { return c.category === keep; })) {
+          sel.value = '';
+        }
+      });
+    }).catch(function () { currentCategories = []; });
+  }
+
+  function categoryOptionsHtml(selected) {
+    return '<option value="">全部知识点</option>' + currentCategories.map(function (c) {
+      return '<option value="' + UI.esc(c.category) + '"' + (c.category === selected ? ' selected' : '') + '>'
+        + UI.esc(c.category) + '（' + c.total + '）</option>';
+    }).join('');
+  }
+
+  function addRule(type, count, score) {
+    ruleSeq++;
+    var id = 'rule-' + ruleSeq;
+    var div = document.createElement('div');
+    div.className = 'rule-row';
+    div.id = id;
+    div.innerHTML =
+      '<div><label style="font-size:12px;font-weight:500">题型</label>'
+      + '<select class="r-type">' + [0, 1, 2, 3, 4].map(function (t) {
+          return '<option value="' + t + '"' + (t === (type === undefined ? 0 : type) ? ' selected' : '') + '>'
+            + TYPE_NAME[t] + '</option>';
+        }).join('') + '</select></div>'
+      // 知识点（可选）：填了就只从这个专题抽题（「一元函数积分学专项训练」就是这么出的）
+      + '<div><label style="font-size:12px;font-weight:500">知识点<span class="muted">（可选）</span></label>'
+      + '<select class="r-category">' + categoryOptionsHtml('') + '</select></div>'
+      + '<div><label style="font-size:12px;font-weight:500">数量</label>'
+      + '<input type="number" class="r-count" min="1" value="' + (count || 5) + '"></div>'
+      + '<div><label style="font-size:12px;font-weight:500">每题分值</label>'
+      + '<input type="number" class="r-score" min="1" value="' + (score || 5) + '"></div>'
+      + '<div><button class="btn btn-sm btn-ghost r-del">删除</button></div>';
+    document.getElementById('rules').appendChild(div);
+
+    div.querySelector('.r-del').addEventListener('click', function () {
+      div.parentNode.removeChild(div);
+      recompute();
+    });
+    div.addEventListener('input', recompute);
+    div.addEventListener('change', recompute);
+    recompute();
+  }
+
+  function recompute() {
+    var cnt = 0, sc = 0;
+    document.querySelectorAll('#rules .rule-row').forEach(function (r) {
+      var c = Number(r.querySelector('.r-count').value) || 0;
+      var s = Number(r.querySelector('.r-score').value) || 0;
+      cnt += c; sc += c * s;
+    });
+    document.getElementById('sum-count').textContent = cnt;
+    document.getElementById('sum-score').textContent = sc;
+  }
+
+  /**
+   * 字段级报错。
+   *
+   * toast 2.6 秒就消失，而且不指向具体哪个输入框：用户点「生成试卷」后
+   * 如果正好没看见那一下，得到的印象就是**按钮没反应**（Bug 3 的原话）。
+   * 所以校验失败时既弹 toast，也在字段旁边留一行红字并聚焦该字段 ——
+   * 与登录页 `.form-row.invalid + .field-error` 是同一套约定。
+   */
+  function fieldError(rowId, errId, message) {
+    var row = document.getElementById(rowId);
+    var err = document.getElementById(errId);
+    if (row) { row.classList.add('invalid'); }
+    if (err) { err.textContent = message; }
+    var input = row ? row.querySelector('input, select, textarea') : null;
+    if (input && input.focus) { input.focus(); }
+  }
+
+  function clearFieldError(rowId, errId) {
+    var row = document.getElementById(rowId);
+    var err = document.getElementById(errId);
+    if (row) { row.classList.remove('invalid'); }
+    if (err) { err.textContent = ''; }
+  }
+
+  function clearAllFieldErrors() {
+    clearFieldError('row-f-title', 'err-f-title');
+    clearFieldError('row-f-bank', 'err-f-bank');
+    clearFieldError('row-f-duration', 'err-f-duration');
+  }
+
+  function generate() {
+    var title = document.getElementById('f-title').value.trim();
+    var bankId = Number(document.getElementById('f-bank').value);
+    var duration = Number(document.getElementById('f-duration').value);
+    var passRaw = document.getElementById('f-pass').value;
+
+    clearAllFieldErrors();
+    if (!title) {
+      UI.toast('请填写考试名称', 'warn');
+      fieldError('row-f-title', 'err-f-title', '请输入考试名称');
+      return;
+    }
+    if (!bankId) {
+      UI.toast('请选择题库（没有题库请先去题库管理新建）', 'warn');
+      fieldError('row-f-bank', 'err-f-bank', '请选择题库（没有题库请先去题库管理新建）');
+      return;
+    }
+    if (!duration || duration <= 0) {
+      UI.toast('考试时长必须大于 0', 'warn');
+      fieldError('row-f-duration', 'err-f-duration', '考试时长必须大于 0');
+      return;
+    }
+
+    var rules = [], seen = {}, problem = '';
+    document.querySelectorAll('#rules .rule-row').forEach(function (r) {
+      var t = Number(r.querySelector('.r-type').value);
+      var c = Number(r.querySelector('.r-count').value);
+      var s = Number(r.querySelector('.r-score').value);
+      var catSel = r.querySelector('.r-category');
+      var cat = catSel ? catSel.value : '';
+      if (!c || c <= 0 || !s || s <= 0) {
+        if (!problem) { problem = '抽题规则里的数量与分值都必须大于 0'; }
+        return;
+      }
+      if (seen[t]) {
+        if (!problem) { problem = '同一题型只能配置一条规则：' + TYPE_NAME[t]; }
+        return;
+      }
+      seen[t] = true;
+      rules.push({ type: t, count: c, score: s, category: cat || null });
+    });
+    // ★ 只要有一条规则不合格就整体打回。
+    //   旧写法只在「一条合格规则都没有」时才拦：于是「值填 0 的那条被静默丢掉、
+    //   其余照常生成」——用户拿到的是一份**比配置少了一条规则的卷子**，
+    //   而唯一的提示只有 2.6 秒的 toast（与 Bug 3 同属静默失败）。
+    if (problem) { UI.toast(problem, 'warn'); return; }
+    if (!rules.length) { UI.toast('请至少添加一条抽题规则', 'warn'); return; }
+
+    var payload = {
+      title: title,
+      description: document.getElementById('f-desc').value.trim() || null,
+      bankId: bankId,
+      duration: duration,
+      passScore: passRaw === '' ? null : Number(passRaw),
+      paperType: document.getElementById('f-paper-type').value,
+      rules: rules
+    };
+
+    var btn = document.getElementById('btn-generate');
+    btn.disabled = true; btn.textContent = '组卷中…';
+    API.post('/api/exams', payload).then(function (exam) {
+      UI.toast('组卷成功：共 ' + exam.totalScore + ' 分，正在跳转…', 'success');
+      setTimeout(function () { location.href = '/teacher/exams.html'; }, 800);
+    }).catch(function (err) {
+      UI.toast(err.message, 'error');
+    }).then(function () {
+      btn.disabled = false; btn.textContent = '生成试卷（草稿）';
+    });
+  }
+
+  document.getElementById('btn-add-rule').addEventListener('click', function () { addRule(0, 5, 5); });
+  document.getElementById('btn-generate').addEventListener('click', generate);
+
+  // 边改边消错：不用再点一次「生成」才知道已经改对了
+  [['f-title', 'row-f-title', 'err-f-title'],
+   ['f-bank', 'row-f-bank', 'err-f-bank'],
+   ['f-duration', 'row-f-duration', 'err-f-duration']].forEach(function (t) {
+    var el = document.getElementById(t[0]);
+    if (!el) { return; }
+    el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input',
+      function () { clearFieldError(t[1], t[2]); });
+  });
+
+  // 默认给三条常见规则：2 单选 10 分、2 多选 20 分、2 判断 5 分
+  addRule(0, 2, 10);
+  addRule(1, 2, 20);
+  addRule(2, 2, 5);
+  // 先拉题库，再按第一个题库把「知识点」下拉填上（顺序不能反：知识点依赖 bankId）
+  loadBanks().then(loadCategories);
+  document.getElementById('f-bank').addEventListener('change', loadCategories);
+})();
+</script>
+</body>
+</html>

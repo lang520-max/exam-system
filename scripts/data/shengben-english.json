@@ -1,0 +1,1129 @@
+{
+  "bank": {
+    "name": "四川专升本 · 英语题库",
+    "subject": "英语",
+    "description": "按四川专升本《英语》考试大纲题型与难度原创命题的题库，覆盖词汇语法、阅读理解、翻译与写作。"
+  },
+  "questions": [
+    {
+      "id": 1101,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "By the time the ambulance arrived, the injured man ______ unconscious for nearly half an hour.",
+      "options": [["A", "had been"], ["B", "has been"], ["C", "was"], ["D", "would be"]],
+      "answer": "A",
+      "analysis": "「by the time + 一般过去时」引导的从句表示过去某一时刻，主句动作发生在它之前，且与 for nearly half an hour 连用表示持续状态，故用过去完成时 had been。B 项现在完成时不能与表示过去的时间状语连用；C 项一般过去时无法体现「过去的过去」；D 项 would be 是过去将来时，句中缺少相应语境。"
+    },
+    {
+      "id": 1102,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "Neither the students nor the teacher ______ aware of the sudden change in the timetable.",
+      "options": [["A", "were"], ["B", "was"], ["C", "are"], ["D", "have been"]],
+      "answer": "B",
+      "analysis": "neither...nor... 连接两个主语时谓语动词遵循「就近原则」，与最近的 the teacher 保持一致，用单数；又因整句叙述过去的情况，故用 was。A、C、D 均为复数形式，与就近的单数主语不一致。"
+    },
+    {
+      "id": 1103,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "______ from the top of the tower, the whole city looks like a huge garden.",
+      "options": [["A", "Seeing"], ["B", "Seen"], ["C", "To see"], ["D", "Having seen"]],
+      "answer": "B",
+      "analysis": "句子主语 the whole city 与 see 之间是被动关系（城市被看），故用过去分词 Seen 作状语。A、D 为现在分词，表示主动，其逻辑主语应是人；C 项动词不定式作状语常表示目的，与句意不符。"
+    },
+    {
+      "id": 1104,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "The manager insisted that the meeting ______ put off until next Monday.",
+      "options": [["A", "is"], ["B", "was"], ["C", "be"], ["D", "would be"]],
+      "answer": "C",
+      "analysis": "insist 表示「坚持要求」时，其后宾语从句用虚拟语气，谓语为 (should) + 动词原形，故用 be（完整形式是 should be put off，should 被省略）。A、B 为陈述语气；D 项 would be 不用于该虚拟结构。"
+    },
+    {
+      "id": 1105,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "We should never judge a person ______ the clothes he wears.",
+      "options": [["A", "by"], ["B", "on"], ["C", "with"], ["D", "for"]],
+      "answer": "A",
+      "analysis": "judge a person by the clothes he wears 是固定搭配，by 表示判断所依据的标准。B 项 on 表示「关于、在……上」；C 项 with 表示伴随或使用工具；D 项 for 表示目的或原因，三者都不能与 judge 构成「根据……来判断」之意。"
+    },
+    {
+      "id": 1106,
+      "type": 0,
+      "difficulty": 3,
+      "score": 3,
+      "content": "Not until he failed the exam ______ how much time he had wasted.",
+      "options": [["A", "he realized"], ["B", "did he realize"], ["C", "he did realize"], ["D", "realized he"]],
+      "answer": "B",
+      "analysis": "Not until... 置于句首时主句要用部分倒装，即把助动词提到主语之前，故为 did he realize。A、C 未倒装；D 项 realized he 是全部倒装的形式，且缺少助动词，均不符合部分倒装的要求。"
+    },
+    {
+      "id": 1107,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "Passage:\nMany people believe that a good memory is something you are born with. Research, however, suggests that memory works more like a muscle: the more you use it, the stronger it becomes. One simple way to train it is to repeat new information aloud. When you speak a word or a sentence, your brain receives the message through both sound and movement, which makes the memory trace deeper than silent reading does.\n\nSleep also matters. During deep sleep, the brain sorts through what happened during the day and stores the important parts. Students who sleep less than six hours often find that facts they reviewed the night before have slipped away by morning. Perhaps the most useful habit, though, is to connect new facts with things you already know. A date becomes easier to remember when it is linked to a song, a place or a personal story.\n\nAccording to the passage, what is memory compared to?",
+      "options": [["A", "a machine"], ["B", "a muscle"], ["C", "a library"], ["D", "a mirror"]],
+      "answer": "B",
+      "analysis": "短文第一段明确指出 memory works more like a muscle，即记忆更像肌肉，越用越强。A、C、D 三项在文中均未出现，属于无依据的干扰项。"
+    },
+    {
+      "id": 1108,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "Passage:\nMany people believe that a good memory is something you are born with. Research, however, suggests that memory works more like a muscle: the more you use it, the stronger it becomes. One simple way to train it is to repeat new information aloud. When you speak a word or a sentence, your brain receives the message through both sound and movement, which makes the memory trace deeper than silent reading does.\n\nSleep also matters. During deep sleep, the brain sorts through what happened during the day and stores the important parts. Students who sleep less than six hours often find that facts they reviewed the night before have slipped away by morning. Perhaps the most useful habit, though, is to connect new facts with things you already know. A date becomes easier to remember when it is linked to a song, a place or a personal story.\n\nWhy is repeating information aloud helpful, according to the passage?",
+      "options": [["A", "It makes silent reading unnecessary."], ["B", "It helps people sleep much longer."], ["C", "The brain receives the message through sound and movement."], ["D", "It makes new words easier to spell."]],
+      "answer": "C",
+      "analysis": "文中说 When you speak a word or a sentence, your brain receives the message through both sound and movement，即朗读使大脑通过声音和动作两条通道接收信息，记忆痕迹更深。A 项「使默读不再必要」文中未提；B 项把睡眠段落的内容张冠李戴；D 项与文意无关。"
+    },
+    {
+      "id": 1109,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "Passage:\nMany people believe that a good memory is something you are born with. Research, however, suggests that memory works more like a muscle: the more you use it, the stronger it becomes. One simple way to train it is to repeat new information aloud. When you speak a word or a sentence, your brain receives the message through both sound and movement, which makes the memory trace deeper than silent reading does.\n\nSleep also matters. During deep sleep, the brain sorts through what happened during the day and stores the important parts. Students who sleep less than six hours often find that facts they reviewed the night before have slipped away by morning. Perhaps the most useful habit, though, is to connect new facts with things you already know. A date becomes easier to remember when it is linked to a song, a place or a personal story.\n\nWhat happens during deep sleep according to the passage?",
+      "options": [["A", "The brain stores the important parts of the day."], ["B", "The brain stops working completely."], ["C", "The brain repeats new words aloud."], ["D", "The brain forgets the whole day."]],
+      "answer": "A",
+      "analysis": "文中提到 During deep sleep, the brain sorts through what happened during the day and stores the important parts，故 A 正确。B、D 与原文相悖；C 项把白天朗读这一方法错误地放到了睡眠过程中。"
+    },
+    {
+      "id": 1110,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "Passage:\nMany people believe that a good memory is something you are born with. Research, however, suggests that memory works more like a muscle: the more you use it, the stronger it becomes. One simple way to train it is to repeat new information aloud. When you speak a word or a sentence, your brain receives the message through both sound and movement, which makes the memory trace deeper than silent reading does.\n\nSleep also matters. During deep sleep, the brain sorts through what happened during the day and stores the important parts. Students who sleep less than six hours often find that facts they reviewed the night before have slipped away by morning. Perhaps the most useful habit, though, is to connect new facts with things you already know. A date becomes easier to remember when it is linked to a song, a place or a personal story.\n\nWhich habit does the passage consider the most useful for memory?",
+      "options": [["A", "Sleeping more than ten hours a day."], ["B", "Reading silently every night."], ["C", "Connecting new facts with things you already know."], ["D", "Writing down every word you hear."]],
+      "answer": "C",
+      "analysis": "文中用 Perhaps the most useful habit, though, is to connect new facts with things you already know 明确给出答案。A 项睡眠时间在文中只提到少于六小时会影响记忆，并未提倡十小时以上；B 项默读正是文中拿来对比的做法；D 项文中未提及。"
+    },
+    {
+      "id": 1111,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "Free Wi-Fi is ______ in every reading room of the library.",
+      "options": [["A", "available"], ["B", "possible"], ["C", "probable"], ["D", "ready"]],
+      "answer": "A",
+      "analysis": "available 意为「可获得的、可使用的」，be available in/at 常用来表示某处提供某种服务，符合句意。B、C 表示「可能的」，其主语通常不能是 Wi-Fi 这类事物；D 项 ready 意为「准备好的」，多接 for 或 to do，不表示「对外开放、可供使用」。"
+    },
+    {
+      "id": 1112,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "You ______ have told her the news yesterday; she was already very upset.",
+      "options": [["A", "mustn't"], ["B", "needn't"], ["C", "shouldn't"], ["D", "couldn't"]],
+      "answer": "C",
+      "analysis": "shouldn't have done 表示「本不该做某事（但事实上已经做了）」，与后半句「她当时已经很伤心」吻合。A 项 mustn't have done 不是规范用法；B 项 needn't have done 意为「本不必做」，与「不该做」的责备语气不同；D 项 couldn't have done 表示对过去的否定推测，与句意不符。"
+    },
+    {
+      "id": 1113,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "This is the village ______ we spent our childhood.",
+      "options": [["A", "which"], ["B", "that"], ["C", "where"], ["D", "when"]],
+      "answer": "C",
+      "analysis": "先行词 the village 表示地点，从句 we spent our childhood 成分完整，缺少的是地点状语，故用关系副词 where（相当于 in which）。A、B 是关系代词，在从句中须作主语或宾语；D 项 when 指时间，与先行词不搭配。"
+    },
+    {
+      "id": 1114,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "The scientist ______ his success to hard work rather than to luck.",
+      "options": [["A", "contributed"], ["B", "attributed"], ["C", "distributed"], ["D", "devoted"]],
+      "answer": "B",
+      "analysis": "attribute A to B 意为「把 A 归因于 B」，与 rather than to luck 的语境完全吻合。A 项 contribute...to 意为「把……贡献给」，主语一般是人把某物献给某事业；C 项 distribute...to 意为「把……分发给」；D 项 devote...to 意为「把……献给、致力于」，三者都不能表达「归因」。"
+    },
+    {
+      "id": 1115,
+      "type": 0,
+      "difficulty": 3,
+      "score": 3,
+      "content": "Hardly ______ the office when the telephone rang.",
+      "options": [["A", "he had entered"], ["B", "had he entered"], ["C", "he entered"], ["D", "did he enter"]],
+      "answer": "B",
+      "analysis": "hardly 置于句首时主句要部分倒装，且 hardly...when... 表示「刚一……就……」，主句用过去完成时、从句用一般过去时，故为 had he entered。A、C 未倒装；D 项 did he enter 时态与句式都不符合 hardly...when... 的固定搭配。"
+    },
+    {
+      "id": 1116,
+      "type": 0,
+      "difficulty": 3,
+      "score": 3,
+      "content": "The company had to ______ the plan because of the sudden cut in funding.",
+      "options": [["A", "call off"], ["B", "call on"], ["C", "call for"], ["D", "call up"]],
+      "answer": "A",
+      "analysis": "call off 意为「取消」，与 because of the sudden cut in funding（资金突然削减）的语境一致。B 项 call on 意为「拜访、号召」；C 项 call for 意为「需要、要求」；D 项 call up 意为「打电话、征召」，都不能与 the plan 搭配表示取消计划。"
+    },
+    {
+      "id": 1117,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "Passage:\nCity farms are appearing in many parts of the world. They are small pieces of land, often on the roofs of buildings or in empty lots, where vegetables and fruit are grown for the people who live nearby. Supporters say city farms do more than produce food. They cool the air around tall buildings, give insects and birds a place to live, and turn unused space into something green and useful.\n\nNot everyone is happy with the idea. Building a farm on a roof costs a lot, and the soil must be light enough for the building to carry it. Water has to be carried up, which uses energy. Some residents also complain about the smell of fertilizer. Still, in crowded cities where fresh vegetables must travel hundreds of kilometers, a small farm on the roof may be the shortest distance between a seed and a dinner plate.\n\nWhat is a city farm according to the passage?",
+      "options": [["A", "A large farm far away from the city."], ["B", "A small piece of land in the city where food is grown."], ["C", "A shop that sells imported vegetables."], ["D", "A park built only for birds and insects."]],
+      "answer": "B",
+      "analysis": "短文开头说 They are small pieces of land, often on the roofs of buildings or in empty lots, where vegetables and fruit are grown for the people who live nearby，故 B 正确。A 项与「位于城市之中」相矛盾；C、D 把城市农场曲解为商店或仅供鸟类昆虫的公园，均属过度推断。"
+    },
+    {
+      "id": 1118,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "Passage:\nCity farms are appearing in many parts of the world. They are small pieces of land, often on the roofs of buildings or in empty lots, where vegetables and fruit are grown for the people who live nearby. Supporters say city farms do more than produce food. They cool the air around tall buildings, give insects and birds a place to live, and turn unused space into something green and useful.\n\nNot everyone is happy with the idea. Building a farm on a roof costs a lot, and the soil must be light enough for the building to carry it. Water has to be carried up, which uses energy. Some residents also complain about the smell of fertilizer. Still, in crowded cities where fresh vegetables must travel hundreds of kilometers, a small farm on the roof may be the shortest distance between a seed and a dinner plate.\n\nWhich of the following is mentioned as a benefit of city farms?",
+      "options": [["A", "They reduce the cost of building roofs."], ["B", "They cool the air around tall buildings."], ["C", "They take the place of all traditional farms."], ["D", "They provide free fertilizer to residents."]],
+      "answer": "B",
+      "analysis": "文中列举的益处包括 cool the air around tall buildings、为昆虫和鸟类提供栖息地、把闲置空间变得绿色有用，故 B 正确。A 项文中只说建屋顶农场花费高，并未说能降低造价；C 项文中未提到取代传统农场；D 项把居民抱怨的「肥料气味」偷换为「免费提供肥料」。"
+    },
+    {
+      "id": 1119,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "Passage:\nCity farms are appearing in many parts of the world. They are small pieces of land, often on the roofs of buildings or in empty lots, where vegetables and fruit are grown for the people who live nearby. Supporters say city farms do more than produce food. They cool the air around tall buildings, give insects and birds a place to live, and turn unused space into something green and useful.\n\nNot everyone is happy with the idea. Building a farm on a roof costs a lot, and the soil must be light enough for the building to carry it. Water has to be carried up, which uses energy. Some residents also complain about the smell of fertilizer. Still, in crowded cities where fresh vegetables must travel hundreds of kilometers, a small farm on the roof may be the shortest distance between a seed and a dinner plate.\n\nWhat problem with city farms does the passage mention?",
+      "options": [["A", "The soil must be light enough for the roof."], ["B", "They produce no vegetables at all."], ["C", "They attract too many tourists."], ["D", "They are too far from the city centre."]],
+      "answer": "A",
+      "analysis": "文中说 the soil must be light enough for the building to carry it，即土壤必须足够轻，这是屋顶农场必须面对的现实困难，故 A 正确。B 与短文内容相反；C 项游客问题文中未提；D 项与「城市农场就在城中」直接矛盾。"
+    },
+    {
+      "id": 1120,
+      "type": 0,
+      "difficulty": 3,
+      "score": 3,
+      "content": "Passage:\nCity farms are appearing in many parts of the world. They are small pieces of land, often on the roofs of buildings or in empty lots, where vegetables and fruit are grown for the people who live nearby. Supporters say city farms do more than produce food. They cool the air around tall buildings, give insects and birds a place to live, and turn unused space into something green and useful.\n\nNot everyone is happy with the idea. Building a farm on a roof costs a lot, and the soil must be light enough for the building to carry it. Water has to be carried up, which uses energy. Some residents also complain about the smell of fertilizer. Still, in crowded cities where fresh vegetables must travel hundreds of kilometers, a small farm on the roof may be the shortest distance between a seed and a dinner plate.\n\nWhat does the last sentence of the passage suggest?",
+      "options": [["A", "City farms bring food closer to the people who eat it."], ["B", "Seeds cannot grow in crowded cities."], ["C", "Dinner plates should be made of soil."], ["D", "Fresh vegetables should travel long distances."]],
+      "answer": "A",
+      "analysis": "末句用 a small farm on the roof may be the shortest distance between a seed and a dinner plate 作比喻，说明屋顶农场缩短了「种子到餐桌」的距离，即食物离食用者更近，故 A 正确。B、C、D 都是对该比喻的字面误解或与文意相反。"
+    },
+    {
+      "id": 1121,
+      "type": 1,
+      "difficulty": 1,
+      "score": 5,
+      "content": "Which of the following words can be used to describe a person who works hard?",
+      "options": [["A", "diligent"], ["B", "hardworking"], ["C", "lazy"], ["D", "industrious"]],
+      "answer": "ABD",
+      "analysis": "diligent、hardworking、industrious 都表示「勤奋的、努力的」，可以形容工作努力的人，其中 industrious 较为书面。C 项 lazy 意为「懒惰的」，与 works hard 的意思相反，不能入选。"
+    },
+    {
+      "id": 1122,
+      "type": 1,
+      "difficulty": 2,
+      "score": 5,
+      "content": "Which of the following sentences use the present perfect tense correctly?",
+      "options": [["A", "I have finished my homework already."], ["B", "She has gone to Beijing last week."], ["C", "They have lived here since 2015."], ["D", "He has been ill for three days."]],
+      "answer": "ACD",
+      "analysis": "现在完成时不能与 last week 这类明确的过去时间状语连用。A 与 already 连用、C 与 since 引导的时间状语连用、D 与 for three days 连用，都符合现在完成时的用法；B 中 last week 指过去的具体时间，应改用一般过去时 went。"
+    },
+    {
+      "id": 1123,
+      "type": 1,
+      "difficulty": 2,
+      "score": 5,
+      "content": "Which of the following prepositional phrases are correct?",
+      "options": [["A", "be good at"], ["B", "be interested on"], ["C", "be proud of"], ["D", "be afraid of"]],
+      "answer": "ACD",
+      "analysis": "be good at、be proud of、be afraid of 都是固定搭配，介词使用正确。B 项应为 be interested in，interested 不与介词 on 搭配表示「对……感兴趣」，这是介词搭配题中常见的干扰设置。"
+    },
+    {
+      "id": 1124,
+      "type": 1,
+      "difficulty": 2,
+      "score": 5,
+      "content": "Which of the following can properly follow 「look forward to」?",
+      "options": [["A", "hearing from you"], ["B", "meet you"], ["C", "the summer holiday"], ["D", "seeing you again"]],
+      "answer": "ACD",
+      "analysis": "look forward to 中的 to 是介词，后面应接名词、代词或动名词。A、D 是动名词短语，C 是名词短语，都可以作介词宾语；B 是动词原形，不能作介词宾语，应改为 meeting you。"
+    },
+    {
+      "id": 1125,
+      "type": 1,
+      "difficulty": 3,
+      "score": 5,
+      "content": "Which of the following sentences contain the subjunctive mood?",
+      "options": [["A", "If I were you, I would accept the offer."], ["B", "I wish I had studied harder last year."], ["C", "He suggested that we should start early."], ["D", "If it rains tomorrow, we will stay at home."]],
+      "answer": "ABC",
+      "analysis": "A 是与现在事实相反的虚拟条件句（从句用 were，主句用 would + 动词原形）；B 是 wish 后表示与过去事实相反的虚拟语气（用 had done）；C 中 suggest 表示「建议」时，宾语从句用 (should) + 动词原形。D 是真实条件句，表示可能发生的情况，不属于虚拟语气。"
+    },
+    {
+      "id": 1126,
+      "type": 1,
+      "difficulty": 2,
+      "score": 5,
+      "content": "Which of the following sentences are grammatically correct?",
+      "options": [["A", "It took me two hours to finish the report."], ["B", "I spent two hours to finish the report."], ["C", "I spent two hours finishing the report."], ["D", "Finishing the report took me two hours."]],
+      "answer": "ACD",
+      "analysis": "take 表示「花费时间」的常用句型是 It takes/took sb. some time to do sth.，A 符合该句型，D 是动名词作主语，同样正确。spend 表示「花费时间做某事」时要用 spend some time (in) doing sth.，故 C 正确，而 B 中的 to finish 用法错误。"
+    },
+    {
+      "id": 1127,
+      "type": 1,
+      "difficulty": 2,
+      "score": 5,
+      "content": "Which of the following words are adverbs?",
+      "options": [["A", "quickly"], ["B", "happy"], ["C", "carefully"], ["D", "friendly"]],
+      "answer": "AC",
+      "analysis": "quickly 和 carefully 是方式副词，可以修饰动词。B 项 happy 是形容词；D 项 friendly 虽以 -ly 结尾，却是形容词，意为「友好的」，不能作副词修饰动词，是「以 -ly 结尾却非副词」的典型例子。"
+    },
+    {
+      "id": 1128,
+      "type": 1,
+      "difficulty": 3,
+      "score": 5,
+      "content": "Which of the following sentences are correct in subject-verb agreement?",
+      "options": [["A", "Each of the students has a dictionary."], ["B", "Neither of the answers is correct."], ["C", "The number of visitors are increasing."], ["D", "A number of students have signed up."]],
+      "answer": "ABD",
+      "analysis": "each of、neither of 后接复数名词时，谓语动词用单数，故 A、B 正确；a number of + 复数名词意为「许多」，谓语用复数，故 D 正确。the number of 意为「……的数量」，中心词是 number，谓语应用单数 is，故 C 错误。"
+    },
+    {
+      "id": 1129,
+      "type": 2,
+      "difficulty": 1,
+      "score": 2,
+      "content": "下列句子语法正确：She has been to Shanghai twice.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "A",
+      "analysis": "have/has been to 表示「去过某地（现在已经回来）」，与 twice 连用表示经历，句子的时态和用法都正确。若表示「去了某地（尚未回来）」，才用 has gone to。"
+    },
+    {
+      "id": 1130,
+      "type": 2,
+      "difficulty": 2,
+      "score": 2,
+      "content": "下列句子语法正确：The news are very exciting.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "B",
+      "analysis": "news 是以 -s 结尾的不可数名词，作主语时谓语动词用单数，应改为 The news is very exciting。类似情况的词还有 physics、mathematics 等学科名称，不能因为词尾是 -s 就当作复数。"
+    },
+    {
+      "id": 1131,
+      "type": 2,
+      "difficulty": 1,
+      "score": 2,
+      "content": "下列句子语法正确：I am looking forward to see you soon.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "B",
+      "analysis": "look forward to 中的 to 是介词，后面要接动名词，应改为 looking forward to seeing you soon。本句错在把介词 to 误当成了动词不定式符号。"
+    },
+    {
+      "id": 1132,
+      "type": 2,
+      "difficulty": 2,
+      "score": 2,
+      "content": "下列句子语法正确：It is important that everyone (should) be present on time.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "A",
+      "analysis": "在 It is important/necessary/essential that... 结构中，主语从句要用虚拟语气，谓语为 (should) + 动词原形，(should) be present 正符合该规则，句子正确。"
+    },
+    {
+      "id": 1133,
+      "type": 2,
+      "difficulty": 1,
+      "score": 2,
+      "content": "下列句子用法正确：He is used to getting up early.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "A",
+      "analysis": "be used to doing sth. 意为「习惯于做某事」，其中的 to 是介词，后接动名词，故 is used to getting up 正确。注意与 used to do（过去常常做）和 be used to do（被用来做）相区别。"
+    },
+    {
+      "id": 1134,
+      "type": 2,
+      "difficulty": 2,
+      "score": 2,
+      "content": "下列句子语法正确：Neither of the two books are interesting.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "B",
+      "analysis": "neither of + 复数名词作主语时，谓语动词通常用单数，应改为 Neither of the two books is interesting。are 与主语的单数意义不一致。"
+    },
+    {
+      "id": 1135,
+      "type": 2,
+      "difficulty": 1,
+      "score": 2,
+      "content": "下列句子语法正确：The boy is enough old to go to school alone.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "B",
+      "analysis": "enough 修饰形容词或副词时应放在其后，正确说法是 The boy is old enough to go to school alone。只有当 enough 修饰名词时才前置，例如 enough time。"
+    },
+    {
+      "id": 1136,
+      "type": 2,
+      "difficulty": 3,
+      "score": 2,
+      "content": "下列句子语法正确：Hardly had I got home when it began to rain heavily.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "A",
+      "analysis": "hardly 置于句首时主句用部分倒装，且 hardly...when... 表示「刚一……就……」，主句用过去完成时、when 从句用一般过去时。本句 had I got home 与 began 的时态与语序完全符合该结构，故正确。"
+    },
+    {
+      "id": 1137,
+      "type": 3,
+      "difficulty": 1,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空（要求使用现在完成时）：He ______ (study) English since he was ten years old.",
+      "options": null,
+      "answer": "has studied",
+      "analysis": "since 引导的时间状语从句用一般过去时，主句要用现在完成时；主语 He 是第三人称单数，故填 has studied。若强调动作一直持续，也可用 has been studying，但本题明确要求使用现在完成时，故答案为 has studied。"
+    },
+    {
+      "id": 1138,
+      "type": 3,
+      "difficulty": 1,
+      "score": 4,
+      "content": "在下列句子的横线处填入恰当的介词：We arrived ______ Beijing at six o'clock yesterday morning.",
+      "options": null,
+      "answer": "in",
+      "analysis": "arrive 后接大地点（城市、国家等）用介词 in，接小地点（车站、机场、村庄等）用 at。Beijing 是城市，故用 in。英语中不说 arrive to a place。"
+    },
+    {
+      "id": 1139,
+      "type": 3,
+      "difficulty": 1,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：The little girl sang the song ______ (beautiful).",
+      "options": null,
+      "answer": "beautifully",
+      "analysis": "此处需要修饰动词 sang，应使用副词，故把形容词 beautiful 变为副词 beautifully。形容词 beautiful 只能修饰名词或作表语，不能直接修饰动词。"
+    },
+    {
+      "id": 1140,
+      "type": 3,
+      "difficulty": 2,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：If I ______ (be) you, I would take the job.",
+      "options": null,
+      "answer": "were",
+      "analysis": "这是与现在事实相反的虚拟条件句，从句谓语用过去式，be 动词一律用 were；主句用 would/could/might + 动词原形。故填 were，不能填 was 或 am。"
+    },
+    {
+      "id": 1141,
+      "type": 3,
+      "difficulty": 2,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：The bridge ______ (build) in 1998 and is still in use today.",
+      "options": null,
+      "answer": "was built",
+      "analysis": "主语 The bridge 与 build 之间是被动关系，且时间状语 in 1998 表示过去，故用一般过去时的被动语态 was built。后半句 is still in use 用一般现在时，与前半句的过去时间并不冲突。"
+    },
+    {
+      "id": 1142,
+      "type": 3,
+      "difficulty": 1,
+      "score": 4,
+      "content": "在下列句子的横线处填入恰当的介词：You should take advantage ______ the chance to practise your spoken English.",
+      "options": null,
+      "answer": "of",
+      "analysis": "take advantage of 是固定短语，意为「利用」，介词只能用 of，故填 of。该短语不能换成其他介词，也不要说成 take advantage over。"
+    },
+    {
+      "id": 1143,
+      "type": 3,
+      "difficulty": 2,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：______ (compare) with his brother, he is more patient.",
+      "options": null,
+      "answer": "Compared",
+      "analysis": "句中主语 he 与 compare 之间是被动关系（他被人拿来与弟弟比较），故用过去分词 Compared 作状语，构成 Compared with... 这一固定表达。若用 Comparing，则逻辑主语应是主动去比较别的事物的人，与句意不符。"
+    },
+    {
+      "id": 1144,
+      "type": 3,
+      "difficulty": 1,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：The children are looking forward to ______ (visit) the science museum.",
+      "options": null,
+      "answer": "visiting",
+      "analysis": "look forward to 中的 to 是介词，后面要接动名词，故填 visiting。学生常误填 visit，原因就是把介词 to 误认为动词不定式符号。"
+    },
+    {
+      "id": 1145,
+      "type": 4,
+      "difficulty": 1,
+      "score": 10,
+      "content": "把下列句子译成汉语：Nothing is more important than health.",
+      "options": null,
+      "answer": "参考译文：没有什么比健康更重要。（也可译为「健康最重要」。）",
+      "analysis": "否定词 nothing 与比较级连用表示最高级含义，即「健康最重要」。翻译时应保留「没有什么比……更……」这一汉语表达，不必逐字译为「没有东西是更重要的」。"
+    },
+    {
+      "id": 1146,
+      "type": 4,
+      "difficulty": 1,
+      "score": 10,
+      "content": "把下列句子译成英语：他太累了，以至于不能继续工作了。",
+      "options": null,
+      "answer": "参考译文：He was so tired that he could not go on working.（同义表达：He was too tired to go on working.）",
+      "analysis": "「太……以至于不能……」可用 so + 形容词 + that + 否定句，也可用 too...to... 结构。「继续工作」用 go on working 或 continue to work。句子叙述过去的情况，故用一般过去时 was。"
+    },
+    {
+      "id": 1147,
+      "type": 4,
+      "difficulty": 1,
+      "score": 10,
+      "content": "把下列句子译成汉语：It was not until midnight that he finished his homework.",
+      "options": null,
+      "answer": "参考译文：直到半夜他才完成作业。",
+      "analysis": "本句是 not until 的强调句型 It was not until... that...，翻译时应处理为「直到……才……」。若不用强调结构，该句相当于 He did not finish his homework until midnight，两句意思相同。"
+    },
+    {
+      "id": 1148,
+      "type": 4,
+      "difficulty": 2,
+      "score": 10,
+      "content": "请根据以下要点，用英语写一封约 100 词的申请信（开头和结尾已给出，不计入总词数）。要点：1. 你从学校网站得知学生会正在招募志愿者；2. 你愿意参加并为新生提供帮助；3. 你的优势是英语口语好、有耐心、周末有空；4. 希望得到面试机会。",
+      "options": null,
+      "answer": "写作要点与常用句式：第一段说明信息来源与写信目的，如 I learned from the school website that the Students' Union is recruiting volunteers, so I am writing to apply for the position.；第二段陈述自身优势，如 I am good at spoken English and I am patient with others. Besides, I am free at weekends.；第三段表达期待，如 I would appreciate it if you could give me an interview. I am looking forward to your early reply.。",
+      "analysis": "本题为应用文写作，评分关注三方面：要点是否齐全（信息来源、申请意愿、个人优势、期待面试）、格式是否得体（书信的称呼与落款）、语言是否准确。叙述能力与意愿用一般现在时，提出请求用 would like、would appreciate 等委婉表达，切忌逐字直译汉语提纲而写出中式英语。"
+    },
+    {
+      "id": 1149,
+      "type": 4,
+      "difficulty": 3,
+      "score": 10,
+      "content": "请根据以下提纲，用英语写一篇约 120 词的短文，谈谈你对「中学生使用手机」的看法。提纲：1. 手机给学习与生活带来的便利；2. 过度使用手机带来的问题；3. 你的建议。",
+      "options": null,
+      "answer": "写作要点与常用句式：第一段引出话题并说明便利，如 With the development of technology, mobile phones have become part of our daily life. They make it easier to search for information and keep in touch with others.；第二段指出问题，如 However, spending too much time on phones does harm to our eyes and our study. Some students even play games in class.；第三段提出建议，如 In my opinion, we should use phones properly. For example, we can set a time limit and keep phones away while studying.。常用句式：play an important part in, do harm to, in my opinion, it is advisable to...。",
+      "analysis": "本题为提纲式议论文，需按「便利—问题—建议」三段展开，与三个提纲要点一一对应。评分要点包括：内容是否覆盖全部提纲、是否使用 however、besides、in my opinion 等连接词使逻辑清晰、时态是否以一般现在时为主，以及建议是否具体可行而非空泛表态。"
+    },
+    {
+      "id": 1150,
+      "type": 4,
+      "difficulty": 1,
+      "score": 10,
+      "content": "把下列句子译成英语：这本书值得再读一遍。",
+      "options": null,
+      "answer": "参考译文：The book is worth reading again.",
+      "analysis": "「值得做某事」用 be worth doing，其中动名词用主动形式表达被动意义，故为 is worth reading。不能写成 be worth to read；若改用 worthy，则须说 be worthy of being read 或 be worthy to be read。"
+    },
+    {
+      "id": 1151,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "单项选择：The heavy rain seriously （　　） the traffic in the city centre.",
+      "options": [["A", "affected"], ["B", "effected"], ["C", "afforded"], ["D", "offered"]],
+      "answer": "A",
+      "analysis": "affect 是及物动词，意为「影响」，符合「大雨严重影响市中心交通」的句意。B 项 effect 通常作名词，意为「效果、影响」，作动词时意为「促成、实现」（如 effect a change），不能表示「对……产生不良影响」；C 项 afforded 意为「负担得起」，D 项 offered 意为「提供」，都只是与答案拼写相近的干扰项。"
+    },
+    {
+      "id": 1152,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "单项选择：The new teacher is very patient （　　） the children who are slow in reading.",
+      "options": [["A", "with"], ["B", "to"], ["C", "for"], ["D", "at"]],
+      "answer": "A",
+      "analysis": "be patient with sb. 是固定搭配，意为「对某人有耐心」，介词只能用 with。B 项 to 用于 be kind to sb.、be polite to sb. 等搭配；C 项 for 多表示目的或对象；D 项 at 用于 be good at、be slow at 等搭配，三者都不能与 patient 连用表示「对某人有耐心」。"
+    },
+    {
+      "id": 1153,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "单项选择：My hands are dirty because I （　　） the flowers in the garden all morning.",
+      "options": [["A", "have been watering"], ["B", "watered"], ["C", "have watered"], ["D", "was watering"]],
+      "answer": "A",
+      "analysis": "现在完成进行时 have been watering 表示从过去一直持续到现在、并可能继续下去的动作，与 all morning 以及「现在手还是脏的」这一结果完全吻合。B、D 两项是一般过去时和过去进行时，只说明过去的情况，无法解释现在的结果；C 项现在完成时强调动作已经完成，与「整个上午一直在浇花」的持续性不符。"
+    },
+    {
+      "id": 1154,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "单项选择：All the exercise books （　　） before Friday.",
+      "options": [["A", "must hand in"], ["B", "must be handed in"], ["C", "must handed in"], ["D", "must be handing in"]],
+      "answer": "B",
+      "analysis": "主语 All the exercise books 与 hand in 之间是被动关系（作业本被交上去），含情态动词的被动语态结构为 must be + 过去分词，故用 must be handed in。A 项是主动语态，作业本不可能自己去交；C 项漏掉了 be，情态动词后不能直接跟过去分词；D 项是进行时，与句意不符。"
+    },
+    {
+      "id": 1155,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "单项选择：Please remember （　　） the windows when you leave the reading room.",
+      "options": [["A", "to lock"], ["B", "locking"], ["C", "lock"], ["D", "locked"]],
+      "answer": "A",
+      "analysis": "remember to do sth. 表示「记得去做某事」（事情还没有做），remember doing sth. 表示「记得做过某事」（事情已经做过）。本句是在对方离开前作出提醒，故用 to lock。B 项 locking 意为「记得锁过窗户」，与提醒的语境矛盾；C、D 两项的形式都不能作 remember 的宾语。"
+    },
+    {
+      "id": 1156,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "单项选择：The girl （　　） by the window is my cousin.",
+      "options": [["A", "sitting"], ["B", "sat"], ["C", "to sit"], ["D", "sits"]],
+      "answer": "A",
+      "analysis": "句中已有谓语 is，空格处只能填非谓语动词；the girl 与 sit 是主动关系，故用现在分词 sitting 作后置定语，相当于 who is sitting by the window。B 项 sat 是过去式，不能作定语；C 项不定式作定语通常表示将来的动作；D 项 sits 会使句子出现两个谓语。"
+    },
+    {
+      "id": 1157,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "单项选择：The teacher made the boy （　　） the sentence three times.",
+      "options": [["A", "to read"], ["B", "read"], ["C", "reading"], ["D", "reads"]],
+      "answer": "B",
+      "analysis": "make sb. do sth. 是使役动词的固定用法，宾语补足语用不带 to 的动词原形，故填 read。A 项多加了 to，是受「不定式作宾补」思维定式影响而误选的典型干扰项；C 项现在分词表示动作正在进行，与「读三遍」这一完整动作不符；D 项第三人称单数形式不能作宾语补足语。"
+    },
+    {
+      "id": 1158,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "单项选择：This is the young writer （　　） novels are popular among college students.",
+      "options": [["A", "who"], ["B", "whose"], ["C", "which"], ["D", "that"]],
+      "answer": "B",
+      "analysis": "空格后的 novels 是名词，与先行词 the young writer 构成所属关系，故用关系代词 whose 作定语，whose novels 相当于 the writer's novels。A 项 who 在从句中只能作主语或宾语；C、D 两项指代事物，都不能放在名词前表示所属关系。"
+    },
+    {
+      "id": 1159,
+      "type": 0,
+      "difficulty": 3,
+      "score": 3,
+      "content": "单项选择：The tool （　　） the worker repaired the machine is a special spanner.",
+      "options": [["A", "with which"], ["B", "which"], ["C", "that"], ["D", "by which"]],
+      "answer": "A",
+      "analysis": "表示「用某件工具做某事」要用介词 with，故定语从句由 with which 引导，with which 在从句中作方式状语。B、C 两项在从句中只能作主语或宾语，而从句中已有主语 the worker 和宾语 the machine；D 项 by 表示手段时通常接动名词或抽象名词（如 by working hard），不能指具体的工具。"
+    },
+    {
+      "id": 1160,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "单项选择：（　　） she said at the meeting made all of us think deeply.",
+      "options": [["A", "What"], ["B", "That"], ["C", "Which"], ["D", "It"]],
+      "answer": "A",
+      "analysis": "从句中 said 缺少宾语，需要一个既起引导作用、又在从句中充当宾语的连接代词，故用 What（相当于 the thing that），引导主语从句。B 项 That 引导主语从句时从句结构必须完整，而这里 said 没有宾语；C 项 Which 表示「哪一个」，与句意不符；D 项 It 不能引导从句。"
+    },
+    {
+      "id": 1161,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "单项选择：Excuse me, could you tell me （　　）?",
+      "options": [["A", "when does the train leave"], ["B", "when the train leaves"], ["C", "when the train leave"], ["D", "when will the train leave"]],
+      "answer": "B",
+      "analysis": "宾语从句必须用陈述语序，即「连接词 + 主语 + 谓语」，故为 when the train leaves。A、D 两项保留了疑问句的倒装语序，是最容易误选的干扰项；C 项主语 the train 是第三人称单数，谓语却用了原形 leave，主谓不一致。"
+    },
+    {
+      "id": 1162,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "单项选择：（　　） tired he was, he went on working till midnight.",
+      "options": [["A", "However"], ["B", "Whatever"], ["C", "No matter"], ["D", "Although"]],
+      "answer": "A",
+      "analysis": "however 引导让步状语从句时可以直接修饰形容词或副词，语序为 However + adj./adv. + 主语 + 系动词，故 However tired he was 正确。B 项 Whatever 只能修饰名词或在从句中作主语、宾语；C 项 No matter 必须与 how 连用，即 No matter how tired he was；D 项 Although 后面要接完整的句子，不能说 Although tired he was。"
+    },
+    {
+      "id": 1163,
+      "type": 0,
+      "difficulty": 3,
+      "score": 3,
+      "content": "单项选择：If you had set off half an hour earlier, you （　　） the train.",
+      "options": [["A", "would not have missed"], ["B", "would not miss"], ["C", "did not miss"], ["D", "had not missed"]],
+      "answer": "A",
+      "analysis": "本题是与过去事实相反的虚拟条件句：从句用 had + 过去分词，主句用 would/could/might + have + 过去分词，故为 would not have missed。B 项 would not miss 是与现在或将来事实相反的主句形式；C 项是陈述语气；D 项把虚拟形式误用到了主句之中。"
+    },
+    {
+      "id": 1164,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "单项选择：You （　　） the tickets — I had already bought two.",
+      "options": [["A", "needn't have bought"], ["B", "mustn't have bought"], ["C", "can't have bought"], ["D", "didn't need to buy"]],
+      "answer": "A",
+      "analysis": "needn't have done 表示「本来不必做某事，却已经做了」，与后半句「我已经买了两张」相呼应，说明买票是多余的。B、C 两项都表示对过去情况的推测（「一定没买」「不可能买了」），与事实正好相反；D 项 didn't need to buy 只说明当时不必买，无法体现「票已经买了」这一结果。"
+    },
+    {
+      "id": 1165,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "单项选择：You've been working in the sun all day. You （　　） be very thirsty.",
+      "options": [["A", "must"], ["B", "can"], ["C", "need"], ["D", "would"]],
+      "answer": "A",
+      "analysis": "must 可以表示有根据的肯定推测，意为「一定」，此处依据是「在太阳下干了一整天活」，故 must be very thirsty 最贴切。B 项 can 表示推测时一般只用于疑问句和否定句，很少用于肯定句；C 项 need 作情态动词只用于疑问句和否定句；D 项 would 表示意愿或过去将来，与推测无关。"
+    },
+    {
+      "id": 1166,
+      "type": 0,
+      "difficulty": 1,
+      "score": 3,
+      "content": "单项选择：Reading English aloud every morning （　　） a good habit.",
+      "options": [["A", "is"], ["B", "are"], ["C", "were"], ["D", "have been"]],
+      "answer": "A",
+      "analysis": "动名词短语 Reading English aloud every morning 作主语时被视为一个整体，谓语动词用单数，且本句陈述的是一般事实，故用 is。B、C、D 三项都是复数形式，是把动名词短语误当成复数名词所致；同理，To learn a language well takes time 中的谓语也用单数。"
+    },
+    {
+      "id": 1167,
+      "type": 0,
+      "difficulty": 3,
+      "score": 3,
+      "content": "单项选择：Only in this way （　　） improve your spoken English.",
+      "options": [["A", "can you"], ["B", "you can"], ["C", "you could"], ["D", "do you can"]],
+      "answer": "A",
+      "analysis": "only + 状语（in this way）置于句首时，主句要用部分倒装，即把情态动词或助动词提到主语之前，故为 can you improve。B、C 两项没有倒装；D 项把助动词 do 与情态动词 can 混用，一个谓语中不能同时出现两个助动词。"
+    },
+    {
+      "id": 1168,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "单项选择：It was in the school library （　　） I first met my best friend.",
+      "options": [["A", "that"], ["B", "which"], ["C", "where"], ["D", "when"]],
+      "answer": "A",
+      "analysis": "本句是强调句型 It is/was + 被强调部分 + that + 其余部分，被强调的是地点状语 in the school library，连接词仍用 that。B 项 which 不能用于强调句；C、D 两项最容易误选，因为被强调的部分表示地点和时间，但强调句的连接词不随被强调部分的性质变化，只有强调人时才可以用 who。"
+    },
+    {
+      "id": 1169,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "单项选择：The more you practise, （　　） you will speak English.",
+      "options": [["A", "the more fluently"], ["B", "more fluently"], ["C", "the most fluently"], ["D", "the more fluent"]],
+      "answer": "A",
+      "analysis": "「the + 比较级..., the + 比较级...」表示「越……就越……」，后半句需要一个修饰 speak 的副词比较级，故用 the more fluently。B 项缺少定冠词 the，比较级句式不完整；C 项是最高级，只用于三者或三者以上的比较；D 项 fluent 是形容词，不能修饰动词 speak。"
+    },
+    {
+      "id": 1170,
+      "type": 0,
+      "difficulty": 2,
+      "score": 3,
+      "content": "阅读下面短文，选择最佳答案：\nPassage:\nMany students believe that the best way to remember a new word is to look it up in a dictionary again and again. A study of 200 college students suggests something different. The students who wrote each new word into a sentence of their own remembered nearly twice as many words as those who simply copied the definitions. The reason is simple: a word becomes part of your memory when it is connected with a real situation. The researchers also found that reviewing the sentences a week later helped more than reviewing them the same evening. So the next time you meet a new word, do not just copy it — use it.\n\nAccording to the passage, what helped the students remember more new words?（　　）",
+      "options": [["A", "Copying the definitions many times."], ["B", "Writing each new word into a sentence of their own."], ["C", "Looking up the words in a dictionary again and again."], ["D", "Reviewing the words on the same evening."]],
+      "answer": "B",
+      "analysis": "文中说 The students who wrote each new word into a sentence of their own remembered nearly twice as many words，即把生词写进自己造的句子里效果最好，故 B 正确。A、C 两项正是文中拿来对比的「反复抄定义、反复查词典」的做法；D 项与原文相反，文中说一周后复习比当天晚上复习更有效。"
+    },
+    {
+      "id": 1171,
+      "type": 1,
+      "difficulty": 1,
+      "score": 5,
+      "content": "多项选择：Which of the following words have a meaning similar to 「important」?（　　）",
+      "options": [["A", "significant"], ["B", "vital"], ["C", "trivial"], ["D", "essential"]],
+      "answer": "ABD",
+      "analysis": "significant、vital、essential 都表示「重要的、至关重要的」，其中 vital 和 essential 语气更强，意为「必不可少的」。C 项 trivial 意为「琐碎的、不重要的」，与 important 意思相反，不能入选，它是本题唯一表示否定意义的干扰项。"
+    },
+    {
+      "id": 1172,
+      "type": 1,
+      "difficulty": 2,
+      "score": 5,
+      "content": "多项选择：Which of the following sentences use the phrasal verbs correctly?（　　）",
+      "options": [["A", "Please turn off the lights before you leave the office."], ["B", "The sports meeting was put off till next Friday."], ["C", "He gave up to smoke three years ago."], ["D", "I ran into an old classmate in the street yesterday."]],
+      "answer": "ABD",
+      "analysis": "turn off（关掉）、put off（推迟）、run into（偶然遇见）在 A、B、D 三句中都用得正确，其中 put off 用于被动语态时仍保留介词 off。C 项 give up 后面要接动名词，应改为 He gave up smoking three years ago，不能说 give up to smoke，这是动名词与不定式混用的常见错误。"
+    },
+    {
+      "id": 1173,
+      "type": 1,
+      "difficulty": 2,
+      "score": 5,
+      "content": "多项选择：Which of the following sentences are in the passive voice?（　　）",
+      "options": [["A", "The song was written by a student of our class."], ["B", "The problem has been solved at last."], ["C", "They are building a new bridge over the river."], ["D", "The meeting will be held in the main hall."]],
+      "answer": "ABD",
+      "analysis": "A 项是一般过去时的被动语态（was written），B 项是现在完成时的被动语态（has been solved），D 项是一般将来时的被动语态（will be held），三者都是「be + 过去分词」结构。C 项 are building 是主动语态，改为被动应说 A new bridge is being built over the river。"
+    },
+    {
+      "id": 1174,
+      "type": 1,
+      "difficulty": 2,
+      "score": 5,
+      "content": "多项选择：Which of the following sentences contain an attributive clause?（　　）",
+      "options": [["A", "The man who is standing under the tree is my uncle."], ["B", "This is the village where we spent our holiday."], ["C", "Please tell me when the train will arrive."], ["D", "I have lost the book that you lent me last week."]],
+      "answer": "ABD",
+      "analysis": "A 项 who 引导的从句修饰 the man，B 项 where 引导的从句修饰 the village，D 项 that 引导的从句修饰 the book，三者都是定语从句。C 项 when 引导的是宾语从句，作 tell 的宾语，表示时间，并不是修饰某个名词的定语从句，这是最容易误选的一项。"
+    },
+    {
+      "id": 1175,
+      "type": 1,
+      "difficulty": 2,
+      "score": 5,
+      "content": "多项选择：Which of the following sentences use modal verbs correctly?（　　）",
+      "options": [["A", "You mustn't smoke here — it's a gas station."], ["B", "She can be able to swim across the river."], ["C", "You needn't come so early tomorrow."], ["D", "He may have missed the last bus."]],
+      "answer": "ACD",
+      "analysis": "A 项 mustn't 表示「禁止」，C 项 needn't 表示「不必」，D 项 may have done 表示对过去情况的推测（「可能已经错过了末班车」），三者用法都正确。B 项 can 与 be able to 都表示能力，不能叠用，应改为 She can swim across the river 或 She is able to swim across the river。"
+    },
+    {
+      "id": 1176,
+      "type": 1,
+      "difficulty": 3,
+      "score": 5,
+      "content": "多项选择：Which of the following sentences use non-finite verbs correctly?（　　）",
+      "options": [["A", "Seeing the teacher coming, the students stopped talking."], ["B", "Having finished his homework, he went out to play basketball."], ["C", "To be honest, I don't like the idea at all."], ["D", "Looked out of the window, I saw a beautiful rainbow."]],
+      "answer": "ABC",
+      "analysis": "A 项现在分词作时间状语，其逻辑主语 the students 与 see 是主动关系；B 项分词的完成式表示该动作先于主句动作发生；C 项不定式作独立成分，意为「说实话」，三者都正确。D 项的逻辑主语 I 与 look 是主动关系，应改为 Looking out of the window，用过去分词就变成了「我被看向窗外」，逻辑不通。"
+    },
+    {
+      "id": 1177,
+      "type": 1,
+      "difficulty": 3,
+      "score": 5,
+      "content": "多项选择：Which of the following sentences are in inverted order?（　　）",
+      "options": [["A", "Never have I seen such a beautiful sunset."], ["B", "Here comes the bus we have been waiting for."], ["C", "Only then did he realize how serious the problem was."], ["D", "He not only wrote the song but also sang it himself."]],
+      "answer": "ABC",
+      "analysis": "A 项否定词 Never 置于句首，引起部分倒装；B 项 Here 置于句首且主语是名词，用全部倒装；C 项 only + 状语置于句首，同样引起部分倒装。D 项用的是 not only...but also... 的常规语序，并未倒装，若把 Not only 提到句首，则前半句需改为 Not only did he write the song。"
+    },
+    {
+      "id": 1178,
+      "type": 1,
+      "difficulty": 1,
+      "score": 5,
+      "content": "多项选择：Which of the following words can be used to describe something difficult?（　　）",
+      "options": [["A", "hard"], ["B", "tough"], ["C", "simple"], ["D", "challenging"]],
+      "answer": "ABD",
+      "analysis": "hard、tough、challenging 都可以形容「困难的、有挑战性的」，其中 tough 多用于口语，challenging 强调「有挑战性但值得一试」。C 项 simple 意为「简单的」，与 difficult 意思相反，不能入选。"
+    },
+    {
+      "id": 1179,
+      "type": 2,
+      "difficulty": 1,
+      "score": 2,
+      "content": "下列句子语法正确：I have seen this film two years ago.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "B",
+      "analysis": "现在完成时不能与 two years ago 这类表示明确过去时间的状语连用，本句应改为 I saw this film two years ago。如果去掉具体时间，则可以说 I have seen this film twice，用现在完成时表示经历。"
+    },
+    {
+      "id": 1180,
+      "type": 2,
+      "difficulty": 1,
+      "score": 2,
+      "content": "下列句子语法正确：He works hardly every day.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "B",
+      "analysis": "hard 作副词时意为「努力地」，hardly 虽然也是副词，但意思是「几乎不」，用在本句中意思完全相反，应改为 He works hard every day。判断这类句子不能只看词尾有没有 -ly，还要看副词的词义。"
+    },
+    {
+      "id": 1181,
+      "type": 2,
+      "difficulty": 1,
+      "score": 2,
+      "content": "下列句子语法正确：Either of the two answers is acceptable.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "A",
+      "analysis": "either of + 复数名词作主语时，谓语动词用单数，本句用 is 是正确的，句意为「两个答案中的任何一个都可以接受」。学生常因为看到 two answers 是复数而误用 are，实际上 either 才是句子的中心词。"
+    },
+    {
+      "id": 1182,
+      "type": 2,
+      "difficulty": 1,
+      "score": 2,
+      "content": "阅读下面短文，判断下列表述是否符合短文内容：\nPassage:\nPaper is one of the most common things in our daily life, and it is also one of the easiest to waste. Every year, millions of tons of paper are thrown away, yet most of it could be used again. Recycling one ton of paper saves about seventeen trees and a large amount of water and electricity. Schools can help in simple ways. Teachers can print on both sides of a sheet, students can use the back of old exercise books for draft work, and notice boards can be replaced by online messages. Recycling paper does not solve every environmental problem, but it is a habit that almost everyone can start today.\n\nRecycling paper can solve all of our environmental problems.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "B",
+      "analysis": "短文最后一句明确指出 Recycling paper does not solve every environmental problem，即回收纸张并不能解决所有环境问题，故该表述错误，应选 B。文中只说回收一吨纸可以节约约十七棵树以及大量的水和电，并未夸大它的作用。"
+    },
+    {
+      "id": 1183,
+      "type": 2,
+      "difficulty": 2,
+      "score": 2,
+      "content": "下列句子语法正确：The boy stood there, not knowing what to say.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "A",
+      "analysis": "not knowing what to say 是现在分词短语作伴随状语，其逻辑主语 the boy 与 know 是主动关系，用现在分词正确；what to say 是「疑问词 + 不定式」结构，作 knowing 的宾语。若改成 not known，就变成了被动关系，与句意不符。"
+    },
+    {
+      "id": 1184,
+      "type": 2,
+      "difficulty": 2,
+      "score": 2,
+      "content": "下列句子语法正确：I wish I can speak English as fluently as you.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "B",
+      "analysis": "wish 后的宾语从句要用虚拟语气，表示与现在事实相反的愿望时，从句谓语用一般过去时，故 can 应改为 could，即 I wish I could speak English as fluently as you。句中 as fluently as 是同级比较，本身没有错误，问题只出在 can 的形式上。"
+    },
+    {
+      "id": 1185,
+      "type": 2,
+      "difficulty": 2,
+      "score": 2,
+      "content": "下列句子语法正确：I don't know that he will come or not.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "B",
+      "analysis": "表示「是否」的宾语从句要用 whether 或 if 引导，且与 or not 直接连用时只能用 whether，故应改为 I don't know whether he will come or not。that 引导宾语从句时只起连接作用，不表示「是否」，用在这里与句意矛盾。"
+    },
+    {
+      "id": 1186,
+      "type": 2,
+      "difficulty": 3,
+      "score": 2,
+      "content": "下列句子语法正确：It is the third time that he has visited the Great Wall.",
+      "options": [["A", "正确"], ["B", "错误"]],
+      "answer": "A",
+      "analysis": "在 It is/was the first (second, third...) time that... 句型中，主句用 is 时从句要用现在完成时，主句用 was 时从句则用过去完成时。本句主句是 It is，从句用 has visited，完全符合该规则，故句子正确。"
+    },
+    {
+      "id": 1187,
+      "type": 3,
+      "difficulty": 1,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：Look! The children （　　） (play) football on the playground.",
+      "answer": "are playing",
+      "analysis": "Look! 提示动作正在发生，应使用现在进行时；主语 The children 是复数，be 动词用 are，故填 are playing。现在进行时的结构是 be + 现在分词，只填 play 或 played 都无法表示「正在踢球」。"
+    },
+    {
+      "id": 1188,
+      "type": 3,
+      "difficulty": 1,
+      "score": 4,
+      "content": "在下列句子的空白处填入恰当的介词：The accident happened （　　） a rainy night.",
+      "answer": "on",
+      "analysis": "表示具体的某个早晨、下午或夜晚（尤其是带有形容词修饰时）要用介词 on，故 a rainy night 前用 on。in the morning/afternoon/evening 是泛指一天中的某一段时间，at night 表示「在夜里」这一笼统概念，都不能与 a rainy night 这样具体修饰的夜晚搭配。"
+    },
+    {
+      "id": 1189,
+      "type": 3,
+      "difficulty": 1,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：Of the two plans, this one seems （　　） (good).",
+      "answer": "better",
+      "analysis": "句首的 Of the two plans 表明是在两者之间进行比较，故用比较级 better。不能填 best，因为最高级用于三者或三者以上的比较；也不能填原级 good，那样就没有比较的意思，与 of the two 的提示不符。"
+    },
+    {
+      "id": 1190,
+      "type": 3,
+      "difficulty": 1,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：This dictionary is very （　　） (use) to English beginners.",
+      "answer": "useful",
+      "analysis": "be 动词后需要形容词作表语，故把 use 变为形容词 useful，构成 be useful to sb.（对某人有帮助）。若填 used，意思是「被使用的」，与句意不符；若填 using，则不能作表语。"
+    },
+    {
+      "id": 1191,
+      "type": 3,
+      "difficulty": 2,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：A new hospital （　　） (build) in our town at the moment.",
+      "answer": "is being built",
+      "analysis": "主语 A new hospital 与 build 之间是被动关系，at the moment 表示动作正在进行，故用现在进行时的被动语态 is being built。现在进行时被动的结构是 be being + 过去分词，学生常漏掉 being 而误写成 is built，那样就成了一般现在时的被动语态，无法体现「正在建造」。"
+    },
+    {
+      "id": 1192,
+      "type": 3,
+      "difficulty": 2,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：It is no use （　　） (argue) with a person who never listens.",
+      "answer": "arguing",
+      "analysis": "It is no use doing sth. 是固定句型，意为「做某事没有用」，其中 It 是形式主语，真正的主语是动名词短语，故填 arguing。此处不能用动词原形 argue，因为动名词短语才是句子的真正主语。"
+    },
+    {
+      "id": 1193,
+      "type": 3,
+      "difficulty": 2,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：By the time you get this letter, I （　　） (leave) for London.",
+      "answer": "will have left",
+      "analysis": "by the time 引导的时间状语从句中用一般现在时表示将来（you get），主句动作在这一将来时刻之前就已经完成，故用将来完成时 will have left。误填 will leave 无法体现「在你收到信之前就已离开」，误填 have left 则与将来的时间不符。"
+    },
+    {
+      "id": 1194,
+      "type": 3,
+      "difficulty": 3,
+      "score": 4,
+      "content": "用括号内单词的适当形式填空：He talked about the city as if he （　　） (be) there many times.",
+      "answer": "had been",
+      "analysis": "as if 引导的从句表示与过去事实相反的虚拟情况时，谓语用过去完成时，故填 had been；句中的 talked 是过去时，说明「去过很多次」是与过去事实相反的假设。如果表示与现在事实相反，则用 were，如 He talks about the city as if he were there。"
+    },
+    {
+      "id": 1195,
+      "type": 4,
+      "difficulty": 1,
+      "score": 10,
+      "content": "把下列句子译成英语：他每天花两个小时练习说英语。",
+      "answer": "参考译文：He spends two hours practising speaking English every day.（同义表达：It takes him two hours to practise speaking English every day.）",
+      "analysis": "「花时间做某事」可用 spend some time (in) doing sth.，也可用 It takes sb. some time to do sth.。「练习做某事」用 practise doing sth.，故为 practising speaking English。注意 spend 后面不能接不定式，不能说 spend two hours to practise。"
+    },
+    {
+      "id": 1196,
+      "type": 4,
+      "difficulty": 1,
+      "score": 10,
+      "content": "把下列句子译成汉语：He is said to have written three novels about village life.",
+      "answer": "参考译文：据说他写了三部关于乡村生活的小说。",
+      "analysis": "sb. is said to have done sth. 是「据说某人做过某事」的固定结构，不定式的完成式 to have written 表示该动作发生在 is said 之前。翻译时可处理为「据说他写了……」，不必逐字译成「他被说已经写了……」，那样就成了中式英语。"
+    },
+    {
+      "id": 1197,
+      "type": 4,
+      "difficulty": 2,
+      "score": 10,
+      "content": "把下列句子译成英语：无论发生什么，你都不应该放弃自己的梦想。",
+      "answer": "参考译文：No matter what happens, you should never give up your dream.（同义表达：Whatever happens, you should never give up your dream.）",
+      "analysis": "「无论……」可用 no matter what 或 whatever 引导让步状语从句，从句中用一般现在时表示将来，故为 No matter what happens。主句「不应该放弃」用 should never give up；注意 give up 后接名词或动名词，不能接不定式。"
+    },
+    {
+      "id": 1198,
+      "type": 4,
+      "difficulty": 2,
+      "score": 10,
+      "content": "把下列句子改为被动语态：They have already finished the new bridge.",
+      "answer": "参考答案：The new bridge has already been finished (by them).",
+      "analysis": "改为被动语态时，原句宾语 the new bridge 变为主语，谓语用「have/has been + 过去分词」；新主语是单数，故用 has been finished。原句中的 already 要放在 has 之后，by them 在不强调执行者时可以省略，省略后句子更自然。"
+    },
+    {
+      "id": 1199,
+      "type": 4,
+      "difficulty": 2,
+      "score": 10,
+      "content": "请从语法角度简要说明下面两个句子在意思上的差别：① He must be at home. ② He can't be at home.",
+      "answer": "参考答案：① must be 表示肯定的推测，意为「他一定在家」；② can't be 表示否定的推测，意为「他不可能在家」。两者都是对现在情况的推测，语气都很强。表示推测的 must 不能用于否定句，其否定形式用 can't（或 couldn't）。",
+      "analysis": "must 与 can 都可以表示推测，但分工不同：must 只用于肯定句，can 主要用于否定句和疑问句，因此「一定不在家」不能说 mustn't be at home。如果是对过去情况的推测，则分别用 must have done 和 can't have done，如 He must have gone home。答题时既要说明两句各自的意思，也要点出 must 不能用于否定推测这一规则。"
+    },
+    {
+      "id": 1200,
+      "type": 4,
+      "difficulty": 3,
+      "score": 10,
+      "content": "请根据以下要点，用英语写一段约 80 词的短文，介绍你的英语学习方法。要点：1. 每天早晨朗读课文约二十分钟；2. 用单词卡片记单词，随时复习；3. 坚持用英语写日记；4. 每周看一部英文电影。",
+      "answer": "写作要点与常用句式：开头点题，如 Everyone has his own way of learning English. Here is mine.；主体按四个要点展开，如 Every morning I read my English texts aloud for about twenty minutes. I also make word cards and review them in my spare time. Besides, I keep a diary in English, and I watch an English film every week.；结尾总结，如 These habits have helped me a lot, and I will keep them up.。常用表达：read aloud, make word cards, keep a diary, be helpful to, stick to。",
+      "analysis": "本题为提纲式写作，篇幅约 80 词，四个要点必须齐全，缺一点就会被扣分。行文应以一般现在时为主，用 every morning、also、besides 等词语把四个要点连接成连贯的段落，避免把要点逐条罗列成四句互不相关的话。评分还关注基本句式与拼写是否正确，如 for about twenty minutes 中的 for 不能省略。"
+    }
+  ],
+  "exams": [
+    {
+      "title": "四川专升本 · 英语模拟卷（一）",
+      "description": "覆盖词汇与语法、阅读理解、翻译与写作五个题型，共 22 题，满分 150 分。",
+      "duration": 120,
+      "passScore": 90,
+      "snapshot": [
+        {"questionId": 1101, "score": 3},
+        {"questionId": 1102, "score": 3},
+        {"questionId": 1103, "score": 3},
+        {"questionId": 1104, "score": 3},
+        {"questionId": 1105, "score": 3},
+        {"questionId": 1106, "score": 3},
+        {"questionId": 1107, "score": 3},
+        {"questionId": 1108, "score": 3},
+        {"questionId": 1109, "score": 3},
+        {"questionId": 1110, "score": 3},
+        {"questionId": 1121, "score": 5},
+        {"questionId": 1122, "score": 5},
+        {"questionId": 1123, "score": 5},
+        {"questionId": 1124, "score": 5},
+        {"questionId": 1129, "score": 3},
+        {"questionId": 1130, "score": 3},
+        {"questionId": 1131, "score": 3},
+        {"questionId": 1132, "score": 3},
+        {"questionId": 1137, "score": 5},
+        {"questionId": 1138, "score": 5},
+        {"questionId": 1139, "score": 5},
+        {"questionId": 1140, "score": 5},
+        {"questionId": 1145, "score": 6},
+        {"questionId": 1146, "score": 6},
+        {"questionId": 1147, "score": 6}
+      ]
+    },
+    {
+      "title": "四川专升本 · 英语模拟卷（二）",
+      "description": "与模拟卷（一）题目完全不重复，覆盖另一篇阅读与其余词汇语法、翻译写作题，满分 150 分。",
+      "duration": 120,
+      "passScore": 90,
+      "snapshot": [
+        {"questionId": 1111, "score": 3},
+        {"questionId": 1112, "score": 3},
+        {"questionId": 1113, "score": 3},
+        {"questionId": 1114, "score": 3},
+        {"questionId": 1115, "score": 3},
+        {"questionId": 1116, "score": 3},
+        {"questionId": 1117, "score": 3},
+        {"questionId": 1118, "score": 3},
+        {"questionId": 1119, "score": 3},
+        {"questionId": 1120, "score": 3},
+        {"questionId": 1125, "score": 5},
+        {"questionId": 1126, "score": 5},
+        {"questionId": 1127, "score": 5},
+        {"questionId": 1128, "score": 5},
+        {"questionId": 1133, "score": 3},
+        {"questionId": 1134, "score": 3},
+        {"questionId": 1135, "score": 3},
+        {"questionId": 1136, "score": 3},
+        {"questionId": 1141, "score": 5},
+        {"questionId": 1142, "score": 5},
+        {"questionId": 1143, "score": 5},
+        {"questionId": 1144, "score": 5},
+        {"questionId": 1148, "score": 6},
+        {"questionId": 1149, "score": 6},
+        {"questionId": 1150, "score": 6}
+      ]
+    },
+    {
+      "title": "四川专升本 · 英语模拟卷（三）",
+      "description": "与前三张卷题目完全不重复，由新增题目组成的原创模拟卷，共 25 题、满分 150 分、及格 90 分，建议用时 120 分钟。",
+      "duration": 120,
+      "passScore": 90,
+      "snapshot": [
+        {"questionId": 1151, "score": 3},
+        {"questionId": 1152, "score": 3},
+        {"questionId": 1153, "score": 3},
+        {"questionId": 1154, "score": 3},
+        {"questionId": 1155, "score": 3},
+        {"questionId": 1156, "score": 3},
+        {"questionId": 1157, "score": 3},
+        {"questionId": 1158, "score": 3},
+        {"questionId": 1159, "score": 3},
+        {"questionId": 1160, "score": 3},
+        {"questionId": 1171, "score": 5},
+        {"questionId": 1172, "score": 5},
+        {"questionId": 1173, "score": 5},
+        {"questionId": 1174, "score": 5},
+        {"questionId": 1179, "score": 3},
+        {"questionId": 1180, "score": 3},
+        {"questionId": 1181, "score": 3},
+        {"questionId": 1182, "score": 3},
+        {"questionId": 1187, "score": 5},
+        {"questionId": 1188, "score": 5},
+        {"questionId": 1189, "score": 5},
+        {"questionId": 1190, "score": 5},
+        {"questionId": 1195, "score": 6},
+        {"questionId": 1196, "score": 6},
+        {"questionId": 1197, "score": 6}
+      ]
+    },
+    {
+      "title": "四川专升本 · 英语模拟卷（四）",
+      "description": "与前三张卷题目完全不重复，由新增题目组成的原创模拟卷，共 25 题、满分 150 分、及格 90 分，建议用时 90 分钟。",
+      "duration": 120,
+      "passScore": 90,
+      "snapshot": [
+        {"questionId": 1161, "score": 3},
+        {"questionId": 1162, "score": 3},
+        {"questionId": 1163, "score": 3},
+        {"questionId": 1164, "score": 3},
+        {"questionId": 1165, "score": 3},
+        {"questionId": 1166, "score": 3},
+        {"questionId": 1167, "score": 3},
+        {"questionId": 1168, "score": 3},
+        {"questionId": 1169, "score": 3},
+        {"questionId": 1170, "score": 3},
+        {"questionId": 1175, "score": 5},
+        {"questionId": 1176, "score": 5},
+        {"questionId": 1177, "score": 5},
+        {"questionId": 1178, "score": 5},
+        {"questionId": 1183, "score": 3},
+        {"questionId": 1184, "score": 3},
+        {"questionId": 1185, "score": 3},
+        {"questionId": 1186, "score": 3},
+        {"questionId": 1191, "score": 5},
+        {"questionId": 1192, "score": 5},
+        {"questionId": 1193, "score": 5},
+        {"questionId": 1194, "score": 5},
+        {"questionId": 1198, "score": 6},
+        {"questionId": 1199, "score": 6},
+        {"questionId": 1200, "score": 6}
+      ]
+    }
+  ]
+}

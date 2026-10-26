@@ -1,37 +1,213 @@
 server:
   port: 8080
-  servlet:
-    encoding:
-      charset: UTF-8
-      force: true
-    session:
-      # 考试期间 Session 不能过期，否则学生答到一半被踢回登录页
-      timeout: 2h
 
 spring:
   application:
     name: exam-system
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    # 本地 MySQL 8；Docker 部署时用环境变量 SPRING_DATASOURCE_URL 覆盖（见 docker-compose.yml）
     url: jdbc:mysql://localhost:3306/exam_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
     password: root
-  thymeleaf:
-    # 开发期关掉模板缓存，改完 HTML 刷新即可生效；生产环境应置为 true
-    cache: false
-    encoding: UTF-8
-    mode: HTML
 
-mybatis:
+  # ------------------------------------------------------------
+  #  Flyway 默认关闭。
+  #
+  #  dev / test 档用的是 H2（MODE=MySQL）+ spring.sql.init
+  #  （schema-h2.sql / data-h2.sql），而 db/migration 下是 MySQL 方言脚本，
+  #  在 H2 上跑会失败。因此迁移只在生产档显式打开
+  #  （见 application-prod.yml）。
+  # ------------------------------------------------------------
+  flyway:
+    enabled: false
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 5000
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 4
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        acknowledge-mode: manual
+        # prefetch=1：判分是逐条串行的，预取多了只会在消费者崩溃时丢更多未 ack 的消息
+        prefetch: 1
+        # 关闭 Spring Retry，重试由消费者自己控制：
+        # GradingConsumer 捕获异常后把消息投到「延迟重试队列」（TTL 5s，
+        # 到期由死信送回判分队列），超过 MAX_RETRY 次才进死信队列。
+        # 这里原先开着 retry.max-attempts=3，但在「MANUAL ack + 异常被代码自己
+        # catch」的情况下 Spring Retry 根本不会计数 —— 那是个假的保护。
+        retry:
+          enabled: false
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+
+mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
-  type-aliases-package: com.caikailang.examsystem.domain
+  type-aliases-package: com.exam.entity
   configuration:
-    # question.creator_id -> creatorId 这类下划线到驼峰的自动映射
     map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      # 刻意不配置 logic-delete-field：
+      # 本项目所有表的 status 都是「业务状态」而不是「软删除标记」
+      # （exam.status: 0草稿/1进行中/2已结束；exam_record.status: 0考试中…3超时）。
+      # 一旦把 status 声明成逻辑删除字段，MyBatis-Plus 会给所有查询自动追加
+      # WHERE status = 1，导致 status=0 的草稿试卷与考试中记录「查不到」——
+      # 插入成功却 selectById 返回 null，是极难排查的隐式行为。
+
+# ============================================================
+#  中间件开关
+#
+#  默认关闭 Redis / RabbitMQ：这两个都是「可选增强」，不是启动必需。
+#  - 关掉 RabbitMQ 后不会注册 @RabbitListener 容器，
+#    因此本机没装 RabbitMQ 时不会每 5 秒刷一次 Connection refused 堆栈；
+#  - 交卷会自动降级为 GradingEngine 同步判分，业务语义不变；
+#  - 关掉 Redis 后幂等退回「数据库条件更新」这条防线。
+#
+#  生产环境由 application-prod.yml 显式打开，避免「忘记开」导致
+#  静默退化成单机同步判分——降级必须是有意识的决定，而不是默认行为。
+# ============================================================
+app:
+  redis:
+    enabled: false
+  rabbitmq:
+    enabled: false
+  # WebSocket 与 Redis 解耦：没有 Redis 时倒计时降级为按 deadline 计算，
+  # 因此默认开启。仅测试档关闭（mock web 环境没有真实 Servlet 容器）。
+  websocket:
+    enabled: true
+
+  exam:
+    # 超时清理定时任务的总开关（测试档关闭，见 application-test.yml）
+    scheduling-enabled: true
+    # 扫描「已超时但仍在考试中」记录的间隔（毫秒）
+    timeout-sweep-interval-ms: 60000
+    # 「待判分」补偿扫描：把长时间没判出分的答卷重新判一遍。
+    # 用途是兜住「判分消息丢了 / 消费者在事务提交前读到旧状态而跳过」这种
+    # 无法自愈的情况 —— 没有它，答卷会永久停在待判分。
+    pending-grade-sweep-interval-ms: 120000
+
+  cors:
+    # 允许的跨域来源，逗号分隔。默认留空 = 不允许任何跨域请求。
+    # 本项目页面与接口同源（nginx 一起反代），正常运行无需跨域；
+    # 仅在前后端分开部署、或用 Vite dev server 调试时填写，例如：
+    #   allowed-origins: http://localhost:5173
+    allowed-origins: ""
+
+  # ============================================================
+  #  人脸识别（V3 新增）
+  #
+  #  两条门禁：① 注册时必须完成人脸采集（活体 + 存底片）
+  #            ② 开考前必须核验通过（或教师人工放行）才允许开考
+  #
+  #  比对走阿里云「视觉智能开放平台 - 人脸比对 1:1（CompareFace）」，
+  #  认证优先用 **ECS 实例 RAM 角色**（临时凭证，服务器上不放长期 AK）。
+  #
+  #  默认【关闭】：本机 dev/test 既没有摄像头也没有云凭证，开着的唯一效果是
+  #  把「开考」永远拦住。生产由环境变量 FACE_ENABLED=true 显式打开。
+  #  未启用时启动日志会明确写一行 WARN —— 免得有人以为门禁在生效。
+  # ============================================================
+  face:
+    enabled: false
+    # 接入地址（地域要和开通服务的地域一致）
+    endpoint: ${FACE_ENDPOINT:https://facebody.cn-shanghai.aliyuncs.com}
+    region-id: ${FACE_REGION:cn-shanghai}
+    # 相似度阈值（0-100）：CompareFace 返回的 Confidence 低于它就算不匹配。
+    # 75 是偏稳的取值：太松会放过不像的人，太紧会让同一个人因光线/角度被误拒。
+    threshold: ${FACE_THRESHOLD:75}
+    # 核验通过后的有效窗口（秒）：超了要重新核验 —— 防「先过核验、再换人开考」
+    pass-window-seconds: ${FACE_PASS_WINDOW_SECONDS:300}
+    # 失败重试上限（只算 FAIL/LIVENESS_FAIL，服务不可用不计入）
+    max-retries: ${FACE_MAX_RETRIES:3}
+    timeout-seconds: ${FACE_TIMEOUT_SECONDS:15}
+    # 单张照片 base64 字符数上限（约 300KB 原图），防止有人往库里塞几 MB
+    max-image-chars: ${FACE_MAX_IMAGE_CHARS:400000}
+    # 实例元数据（RAM 角色临时凭证）；测试里指向本地假服务
+    imds-url: ${FACE_IMDS_URL:http://100.100.100.200/latest/meta-data/ram/security-credentials}
+    role-name: ${FACE_ROLE_NAME:}
+    # 仅本机调试用：显式 AK 优先于 IMDS。生产请留空，改用 RAM 角色
+    access-key-id: ${FACE_ACCESS_KEY_ID:}
+    access-key-secret: ${FACE_ACCESS_KEY_SECRET:}
+
+  # ============================================================
+  #  主观题 AI 评分
+  #
+  #  默认【关闭】。与 Redis / RabbitMQ 不同，这是按量付费的外部调用，
+  #  「默认开着也不花钱」不成立，所以必须显式开启。
+  #
+  #  关闭时的行为：主观题保持 graded_by = NULL（待复核），成绩单显示「待复核」
+  #  而不是「答错」，总分只计客观题 —— 不会因为没配 AI 就把功能弄坏。
+  #
+  #  开启后：模型给分数 + 理由，直接计为最终得分，记录状态变为「已出分」。
+  #  任何调用失败（超时/限流/返回畸形）都只让该题降级为「待复核」，不影响交卷。
+  #
+  #  协议是 OpenAI 兼容的 /chat/completions，默认指向阿里云百炼（DashScope）
+  #  兼容模式；换智谱 / DeepSeek / 本地 Ollama 只需改 base-url 与 model。
+  # ============================================================
+  ai:
+    enabled: false
+    base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    # 密钥只从环境变量读，绝不写进仓库。
+    # 开启了 enabled 却没给密钥 → 启动直接报错（静默降级会表现成「主观题永远 0 分」，更难查）
+    api-key: ${AI_API_KEY:}
+    model: qwen-plus
+    # 单题评分超时；超时即降级为「待复核」
+    timeout-seconds: 25
+    # 学生答案截断长度：防止超长答案把 token 费用推高
+    max-answer-chars: 2000
+    max-reason-chars: 200
+
+# JWT 配置
+jwt:
+  secret: exam-system-v2-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256
+  access-expire: 1800000      # 30分钟
+  refresh-expire: 604800000   # 7天
+
+# ============================================================
+#  健康检查端点
+#
+#  只暴露 health：容器 HEALTHCHECK 与 nginx /health 都打它。
+#  show-details=never 很关键——默认的 "when-authorized" 在放开
+#  /actuator/health 匿名访问后虽然不会泄露详情，但显式写死更稳妥，
+#  避免将来有人改了安全配置把数据库连接信息一起暴露出去。
+# ============================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+  health:
+    # 健康指示器必须跟着中间件开关走。
+    # 默认行为是「只要 classpath 上有 starter 就注册指示器」：于是关掉 RabbitMQ 的
+    # 部署（例如 2 GiB 单机、刻意不装 broker）里，每次 /actuator/health 都会去连
+    # 一次 broker，连不上就把整体状态判成 DOWN（HTTP 503）——
+    # 容器 HEALTHCHECK、nginx /health、监控探针会集体误报「服务不可用」。
+    # 2026-09-16 在阿里云 2 核 2 GiB 上实测踩到（应用其实好得很）。
+    rabbit:
+      enabled: ${app.rabbitmq.enabled:false}
+    redis:
+      enabled: ${app.redis.enabled:false}
 
 logging:
   level:
-    com.caikailang.examsystem: info
-    # 排查 SQL 时改成 debug，可打印 MyBatis 实际执行的语句与参数
-    com.caikailang.examsystem.mapper: info
+    com.exam: debug
+    com.exam.mapper: debug

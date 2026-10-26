@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我的考试 · 在线考试系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">可参加的考试</h1>
+      <p class="page-sub">点击「开始考试」进入答题；中途刷新或断线后可点「继续答题」，计时不会重置。</p>
+    </div>
+    <button class="btn-text" id="btn-refresh">刷新</button>
+  </div>
+
+  <div class="stat-grid" id="stats" style="margin-bottom:18px"></div>
+
+  <div class="card">
+    <div class="table-wrap">
+    <table>
+      <thead>
+      <tr>
+        <th style="width:44px">#</th>
+        <th>考试名称</th>
+        <th style="width:90px">时长</th>
+        <th style="width:90px">总分</th>
+        <th style="width:90px">及格分</th>
+        <th style="width:170px">我的状态</th>
+        <th style="width:130px" class="text-right">操作</th>
+      </tr>
+      </thead>
+      <tbody id="tbody">
+      <tr><td colspan="7" class="spinner">加载中…</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- 概览图表：及格率与交卷进度 -->
+  <div class="card">
+    <h3 class="card-title">我的概览</h3>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <h4>及格率</h4>
+        <div id="chart-passrate"></div>
+      </div>
+      <div class="chart-box">
+        <h4>交卷进度</h4>
+        <div id="chart-progress"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/charts.js"></script>
+<script>
+(function () {
+  Auth.requireRole('student');
+  UI.renderNav('student', 'exams');
+
+  var exams = [];
+  var myRecords = {};   // examId -> MyRecordVO
+
+  function loadStats() {
+    return API.get('/api/dashboard/my-stats').then(function (s) {
+      document.getElementById('stats').innerHTML =
+        stat(s.totalExams, '参加考试') +
+        stat(s.submittedCount, '已交卷') +
+        stat(s.passedCount, '及格门数') +
+        stat(Math.round(s.avgScore * 10) / 10, '平均分') +
+        stat(s.maxScore, '最高分');
+      renderStatCharts(s);
+    });
+  }
+
+  /** 两个环形图：及格率（分母是已交卷）与交卷进度（分母是参加的考试） */
+  function renderStatCharts(s) {
+    var submitted = s.submittedCount || 0;
+    var passed = s.passedCount || 0;
+    var total = s.totalExams || 0;
+
+    document.getElementById('chart-passrate').innerHTML = Charts.donut({
+      value: passed,
+      total: submitted,
+      label: '及格',
+      tone: 'var(--ok)',
+      sublabel: submitted ? passed + ' / ' + submitted + ' 门及格' : '还没有已交卷的考试'
+    });
+    document.getElementById('chart-progress').innerHTML = Charts.donut({
+      value: submitted,
+      total: total,
+      label: '已交卷',
+      sublabel: total ? submitted + ' / ' + total + ' 场已交卷' : '暂无可参加的考试'
+    });
+  }
+
+  function stat(num, label) {
+    return '<div class="stat"><div class="stat-num">' + UI.esc(num) + '</div>'
+      + '<div class="stat-label">' + UI.esc(label) + '</div></div>';
+  }
+
+  function statusCell(exam) {
+    var r = myRecords[exam.id];
+    if (!r) { return '<span class="badge badge-gray">未参加</span>'; }
+    if (r.status === 0) { return '<span class="badge badge-info">答题中</span>'; }
+    if (r.status === 1) { return '<span class="badge badge-warn">待判分</span>'; }
+    var cls = r.passed ? 'badge-success' : 'badge-danger';
+    var txt = (r.score === null || r.score === undefined ? '-' : r.score) + ' / ' + r.totalScore
+      + (r.passed ? ' 及格' : ' 不及格');
+    return '<span class="badge ' + cls + '">' + UI.esc(txt) + '</span>';
+  }
+
+  function actionCell(exam) {
+    var r = myRecords[exam.id];
+    if (!r) {
+      return '<button class="btn btn-sm" data-act="start" data-exam="' + exam.id + '">开始考试</button>';
+    }
+    if (r.status === 0) {
+      return '<button class="btn btn-sm btn-success" data-act="resume" data-record="' + r.recordId + '">继续答题</button>';
+    }
+    if (r.status === 2 || r.status === 3) {
+      return '<button class="btn btn-sm btn-ghost" data-act="result" data-record="' + r.recordId + '">查看成绩</button>';
+    }
+    return '<span class="muted">判分中…</span>';
+  }
+
+  function render() {
+    var tb = document.getElementById('tbody');
+    if (!exams.length) {
+      tb.innerHTML = '<tr><td colspan="7" class="empty">暂时没有已发布的考试</td></tr>';
+      return;
+    }
+    tb.innerHTML = exams.map(function (e, i) {
+      return '<tr>'
+        + '<td class="muted">' + (i + 1) + '</td>'
+        + '<td><strong>' + UI.esc(e.title) + '</strong>'
+        // 试卷类型（V4）：学生要能分辨「专项训练」和整套「模拟卷」——
+        // 专项用来补短板，模拟卷用来掐时间，用法完全不同
+        + (e.paperType ? ' <span class="badge ' + (e.paperType === '专项训练' ? 'badge-info' : 'badge-gray') + '">'
+            + UI.esc(e.paperType) + '</span>' : '')
+        + (e.description ? '<div class="muted" style="font-size:12px">' + UI.esc(e.description) + '</div>' : '')
+        + '</td>'
+        + '<td>' + UI.esc(e.duration) + ' 分钟</td>'
+        + '<td>' + UI.esc(e.totalScore) + '</td>'
+        + '<td>' + UI.esc(e.passScore) + '</td>'
+        + '<td>' + statusCell(e) + '</td>'
+        + '<td class="actions text-right">' + actionCell(e) + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function load() {
+    document.getElementById('tbody').innerHTML = '<tr><td colspan="7" class="spinner">加载中…</td></tr>';
+    // 只取已发布的考试（status=1）
+    return Promise.all([
+      API.get('/api/exams?status=1'),
+      API.get('/api/exams/my')
+    ]).then(function (res) {
+      exams = res[0] || [];
+      myRecords = {};
+      (res[1] || []).forEach(function (r) { myRecords[r.examId] = r; });
+      render();
+      return loadStats();
+    }).catch(function (err) {
+      document.getElementById('tbody').innerHTML =
+        '<tr><td colspan="7" class="empty">加载失败：' + UI.esc(err.message) + '</td></tr>';
+    });
+  }
+
+  // ---- 事件（事件委托，避免为每行单独绑定）----
+  document.getElementById('tbody').addEventListener('click', function (ev) {
+    var btn = ev.target.closest('button[data-act]');
+    if (!btn) { return; }
+    var act = btn.getAttribute('data-act');
+    btn.disabled = true;
+
+    if (act === 'start') {
+      var examId = btn.getAttribute('data-exam');
+      // 人脸门禁：功能启用时先核验，通过了才真的调开考接口。
+      // 前端这一层只是体验（弹窗里就能拍），真正的拦截在服务端 startExam ——
+      // 直接拿 token 调接口同样过不去。
+      startWithFaceCheck(examId, btn);
+    } else if (act === 'resume') {
+      location.href = '/student/exam.html?recordId=' + btn.getAttribute('data-record');
+    } else if (act === 'result') {
+      location.href = '/student/scores.html?recordId=' + btn.getAttribute('data-record');
+    }
+  });
+
+  /** 调开考接口并跳转 */
+  function doStart(examId, btn) {
+    API.post('/api/exams/' + examId + '/start')
+      .then(function (record) {
+        location.href = '/student/exam.html?recordId=' + record.id;
+      })
+      .catch(function (err) {
+        UI.toast(err.message, 'error');
+        if (btn) { btn.disabled = false; }
+        load();
+      });
+  }
+
+  /**
+   * 开考前的人脸核验流程。
+   *
+   * 门禁没开（app.face.enabled=false）时直接开考 —— 前端不该比服务端更严，
+   * 否则本机 dev 环境下所有人都考不了试。
+   */
+  function startWithFaceCheck(examId, btn) {
+    API.get('/api/face/config').then(function (cfg) {
+      if (!cfg || !cfg.enabled) { return doStart(examId, btn); }
+      return openFaceVerify(examId, btn, cfg);
+    }).catch(function () {
+      // 配置接口都拿不到时按「不拦」处理：服务端仍会拦，不能因为前端小故障挡住考试
+      return doStart(examId, btn);
+    });
+  }
+
+  /**
+   * 按需加载人脸库。
+   *
+   * 库本体 1.3MB，只有真正要核验时才拉 —— 平时浏览考试列表不该为它买单。
+   * 加载顺序有依赖：face-liveness.js 用到 window.faceapi，所以必须后加载。
+   */
+  function ensureFaceLibs() {
+    if (window.FaceLiveness) { return Promise.resolve(); }
+    function loadScript(src) {
+      return new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = src;
+        s.onload = function () { resolve(); };
+        s.onerror = function () { reject(new Error('加载失败：' + src)); };
+        document.head.appendChild(s);
+      });
+    }
+    return loadScript('/vendor/face-api/face-api.js').then(function () {
+      return loadScript('/js/face-liveness.js');
+    });
+  }
+
+  /** 核验弹窗：预览 → 眨眼 → 上传比对 → 通过后自动开考 */
+  function openFaceVerify(examId, btn, cfg) {
+    return new Promise(function (resolve) {
+      var mask = document.createElement('div');
+      mask.className = 'modal-mask';
+      mask.innerHTML =
+        '<div class="modal" style="max-width:520px">'
+        + '<h3 class="modal-title">开考前人脸核验</h3>'
+        + '<div class="face-capture">'
+        + '<div class="face-stage"><video id="fv-video" playsinline autoplay muted></video>'
+        + '<img id="fv-preview" alt="现场抓拍" style="display:none">'
+        + '<div class="face-placeholder" id="fv-placeholder">点「开始核验」，把脸放入框内并按提示慢慢转头</div></div>'
+        + '<div class="face-progress" style="margin:8px 0"><i id="fv-bar"></i></div>'
+        + '<div class="face-hint" id="fv-hint">核验通过后 '
+        + Math.round((cfg.passWindowSeconds || 300) / 60) + ' 分钟内有效；连续失败 '
+        + (cfg.maxRetries || 3) + ' 次后需监考老师放行。</div>'
+        + '<div class="face-actions">'
+        + '<button type="button" class="btn" id="fv-start">开始核验</button>'
+        + '<button type="button" class="btn btn-ghost" id="fv-cancel">取消</button>'
+        + '<a class="btn-text" id="fv-enroll" href="/face-enroll.html" style="display:none">去录入人脸</a>'
+        + '</div></div></div>';
+      document.body.appendChild(mask);
+
+      var video = mask.querySelector('#fv-video');
+      var preview = mask.querySelector('#fv-preview');
+      var placeholder = mask.querySelector('#fv-placeholder');
+      var hint = mask.querySelector('#fv-hint');
+      var startBtn = mask.querySelector('#fv-start');
+      var cancelBtn = mask.querySelector('#fv-cancel');
+      var enrollLink = mask.querySelector('#fv-enroll');
+
+      function setHint(text, kind) {
+        hint.className = 'face-hint' + (kind ? ' is-' + kind : '');
+        hint.textContent = text;
+      }
+
+      function close() {
+        if (window.FaceLiveness) { FaceLiveness.stop(video); }
+        mask.remove();
+      }
+
+      cancelBtn.addEventListener('click', function () {
+        close();
+        if (btn) { btn.disabled = false; }
+        resolve();
+      });
+
+      // 弹窗先出来，人脸库在后台并行加载（1.3MB），加载完按钮才可用
+      startBtn.disabled = true;
+      ensureFaceLibs().then(function () {
+        startBtn.disabled = false;
+        setHint('点「开始核验」，把脸放入框内并按提示慢慢转头');
+      }).catch(function (err) {
+        setHint(err.message + '（请刷新页面或联系管理员）', 'bad');
+      });
+
+      startBtn.addEventListener('click', function () {
+        if (!window.FaceLiveness) {
+          setHint('人脸库未加载，请联系管理员（/vendor/face-api/ 是否可访问）', 'bad');
+          return;
+        }
+        startBtn.disabled = true;
+        placeholder.style.display = 'none';
+        setHint('正在打开摄像头…');
+        FaceLiveness.capture({
+          video: video,
+          modelPath: '/vendor/face-api/model',
+          onHint: function (t) { setHint(t); },
+          onProgress: function (p) {
+            var bar = mask.querySelector('#fv-bar');
+            if (bar && typeof p.percent === 'number') {
+              bar.style.width = p.percent + '%';
+              bar.parentNode.className = 'face-progress' + (p.percent >= 100 ? ' is-done' : '');
+            }
+          }
+        }).then(function (result) {
+          preview.src = result.imageBase64;
+          preview.style.display = 'block';
+          video.style.display = 'none';
+          setHint('活体通过，正在比对…');
+          return API.post('/api/face/verify', {
+            examId: Number(examId),
+            imageBase64: result.imageBase64,
+            liveness: true
+          });
+        }).then(function (r) {
+          if (r && r.passed) {
+            setHint('核验通过（相似度 ' + r.confidence + '），正在进入考试…', 'ok');
+            setTimeout(function () {
+              close();
+              doStart(examId, btn);
+              resolve();
+            }, 600);
+            return;
+          }
+          // 未通过：把服务端给的语义原样展示（重试剩余次数 / 找老师 / 去录底片）
+          var result = (r && r.result) || 'FAIL';
+          if (result === 'NEED_ENROLL') {
+            enrollLink.style.display = '';
+            setHint(r.message || '还没有录入人脸底片', 'warn');
+          } else if (r && r.blocked) {
+            setHint(r.message || '失败次数已达上限，请联系监考老师', 'bad');
+          } else if (result === 'UNAVAILABLE') {
+            setHint(r.message || '核验服务暂时不可用，请联系监考老师', 'bad');
+          } else {
+            setHint((r && r.message ? r.message : '核验未通过') +
+              (r && typeof r.retriesLeft === 'number' ? '（还剩 ' + r.retriesLeft + ' 次机会）' : ''), 'bad');
+          }
+          startBtn.disabled = false;
+          if (window.FaceLiveness) { FaceLiveness.stop(video); }
+          preview.style.display = 'none';
+          video.style.display = 'block';
+          placeholder.style.display = 'flex';
+        }).catch(function (err) {
+          var map = {
+            PERMISSION_DENIED: '摄像头权限被拒绝：请在浏览器允许摄像头（手机需用 HTTPS 打开本站）',
+            NO_CAMERA: '没有找到可用的摄像头',
+            NO_FACE: '没有检测到人脸，请正对镜头后重试',
+            CANCELLED: '已取消采集',
+        NO_BLINK: '没有检测到眨眼，请按提示正常眨一次眼'
+          };
+          setHint(map[err && err.code] || ('核验失败：' + (err && err.message ? err.message : '未知错误')), 'bad');
+          startBtn.disabled = false;
+          video.style.display = 'block';
+          preview.style.display = 'none';
+          placeholder.style.display = 'flex';
+        });
+      });
+    });
+  }
+
+  document.getElementById('btn-refresh').addEventListener('click', load);
+
+  load();
+})();
+</script>
+</body>
+</html>

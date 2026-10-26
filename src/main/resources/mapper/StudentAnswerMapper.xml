@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.StudentAnswerMapper">
+
+    <!-- 批量插入答案 -->
+    <insert id="batchInsert" parameterType="list">
+        INSERT INTO student_answer (record_id, question_id, answer, score, is_correct, created_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.recordId}, #{item.questionId}, #{item.answer}, #{item.score}, #{item.isCorrect}, NOW())
+        </foreach>
+    </insert>
+
+    <!--
+      客观题批量写分：一条 UPDATE 覆盖整卷客观题，替代逐题 updateScore。
+      各题得分不同，所以用 CASE id WHEN <id> THEN <score> 逐行给出结果；
+      graded_by 统一是 AUTO，可以放在 SET 里直接写常量。
+      reviewed_at 表示「该题完成评分的时间」，与单条 updateScore 口径一致。
+    -->
+    <update id="batchUpdateGradedScores">
+        UPDATE student_answer
+        SET score = CASE id
+            <foreach collection="list" item="item">WHEN #{item.id} THEN #{item.score}</foreach>
+            END,
+            is_correct = CASE id
+            <foreach collection="list" item="item">WHEN #{item.id} THEN #{item.isCorrect}</foreach>
+            END,
+            graded_by = 'AUTO',
+            reviewed_at = CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">#{item.id}</foreach>
+    </update>
+
+    <!--
+      AI 评分批量写分：与上一条同理，额外写 ai_reason / ai_model。
+      这两列必须显式给出 jdbcType：AI 没给理由时是 null，
+      而不带 jdbcType 的 null 参数在部分驱动上会以 JdbcType.OTHER 落到 SQL 里报错。
+    -->
+    <update id="batchUpdateAiScores">
+        UPDATE student_answer
+        SET score = CASE id
+            <foreach collection="list" item="item">WHEN #{item.id} THEN #{item.score}</foreach>
+            END,
+            is_correct = CASE id
+            <foreach collection="list" item="item">WHEN #{item.id} THEN #{item.isCorrect}</foreach>
+            END,
+            graded_by = 'AI',
+            ai_reason = CASE id
+            <foreach collection="list" item="item">WHEN #{item.id} THEN #{item.aiReason,jdbcType=VARCHAR}</foreach>
+            END,
+            ai_model = CASE id
+            <foreach collection="list" item="item">WHEN #{item.id} THEN #{item.aiModel,jdbcType=VARCHAR}</foreach>
+            END,
+            reviewed_at = CURRENT_TIMESTAMP
+        WHERE id IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">#{item.id}</foreach>
+    </update>
+
+</mapper>

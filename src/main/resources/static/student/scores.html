@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我的成绩 · 在线考试系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- 数学公式渲染（本地 KaTeX，离线可用） -->
+  <link rel="stylesheet" href="/vendor/katex/katex.min.css">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">我的成绩</h1>
+      <p class="page-sub">点击「成绩单」查看逐题作答、正确答案与得分；「只看错题」筛选出答错的题。</p>
+    </div>
+    <button class="btn-text" id="btn-refresh">刷新</button>
+  </div>
+
+  <div class="stat-grid" id="stats" style="margin-bottom:18px"></div>
+
+  <!-- 成绩走势：折线用得分率（不同卷满分不同，得分率才可比），环形看及格门数 -->
+  <div class="card" id="chart-card">
+    <h3 class="card-title">成绩走势</h3>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <h4>得分率趋势 <span id="trend-hint"></span></h4>
+        <div id="chart-trend"></div>
+      </div>
+      <div class="chart-box">
+        <h4>及格门数</h4>
+        <div id="chart-pass"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 成绩单区域（从列表点进来，或带 ?recordId= 直达） -->
+  <div class="card" id="detail-card" style="display:none">
+    <div class="flex-between">
+      <h3 class="card-title" id="detail-title" style="margin:0">成绩单</h3>
+      <div class="btn-row">
+        <button class="btn btn-sm btn-ghost" id="btn-only-wrong">只看错题</button>
+        <button class="btn btn-sm btn-ghost" id="btn-close-detail">收起</button>
+      </div>
+    </div>
+    <div id="detail-body" style="margin-top:14px"></div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+    <table>
+      <thead>
+      <tr>
+        <th style="width:44px">#</th>
+        <th>考试名称</th>
+        <th style="width:170px">交卷时间</th>
+        <th style="width:110px">得分</th>
+        <th style="width:100px">结果</th>
+        <th style="width:100px">状态</th>
+        <th style="width:130px" class="text-right">操作</th>
+      </tr>
+      </thead>
+      <tbody id="tbody">
+      <tr><td colspan="7" class="spinner">加载中…</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<script src="/vendor/katex/katex.min.js"></script>
+<script src="/vendor/katex/contrib/auto-render.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/charts.js"></script>
+<script src="/js/math.js"></script>
+<script>
+(function () {
+  Auth.requireRole('student');
+  UI.renderNav('student', 'scores');
+
+  var records = [];
+  var currentResult = null;
+  var onlyWrong = false;
+
+  function stat(num, label) {
+    return '<div class="stat"><div class="stat-num">' + UI.esc(num) + '</div>'
+      + '<div class="stat-label">' + UI.esc(label) + '</div></div>';
+  }
+
+  function loadStats() {
+    return API.get('/api/dashboard/my-stats').then(function (s) {
+      document.getElementById('stats').innerHTML =
+        stat(s.totalExams, '参加考试') +
+        stat(s.submittedCount, '已交卷') +
+        stat(s.passedCount, '及格门数') +
+        stat(Math.round(s.avgScore * 10) / 10, '平均分') +
+        stat(s.maxScore, '最高分');
+    });
+  }
+
+  function resultBadge(r) {
+    if (r.passed === true) { return '<span class="badge badge-success">及格</span>'; }
+    if (r.passed === false) { return '<span class="badge badge-danger">不及格</span>'; }
+    return '<span class="badge badge-gray">—</span>';
+  }
+
+  function statusBadge(r) {
+    var map = { 0: ['badge-info', '考试中'], 1: ['badge-warn', '待判分'], 2: ['badge-success', '已出分'], 3: ['badge-warn', '超时'] };
+    var m = map[r.status] || ['badge-gray', '未知'];
+    return '<span class="badge ' + m[0] + '">' + UI.esc(r.statusText || m[1]) + '</span>';
+  }
+
+  /* ---------------------------------------------------- 图表 */
+
+  /** 排序键：UI.fmtTime 输出 yyyy-MM-dd HH:mm，字典序即时间序 */
+  function timeKey(r) { return UI.fmtTime(r.endTime || r.startTime); }
+
+  /**
+   * 画成绩走势。
+   *
+   * ★ 只统计**已出分（status=2）**的记录。旧口径是「score 非空」，
+   * 但**待判分的记录也是有分的**（客观题已经判过的那部分，主观题等教师复核），
+   * 于是待判分被算进了「已出分」：图上多一个后面还会变的数据点，
+   * 及格率环的分母也被撑大 —— 页面上就出现了「共 N 场已出分」比列表里
+   * 真正的「已出分」行数多的情况（Bug 10：标签说 3 场，列表只有 2 场）。
+   * 超时记录按设计不伪造分数（score 为 null），本来就不会进来。
+   */
+  function renderCharts() {
+    var scored = records.filter(function (r) {
+      return r.status === 2 && r.score !== null && r.score !== undefined && r.totalScore;
+    }).sort(function (a, b) { return timeKey(a) < timeKey(b) ? -1 : 1; });
+
+    var recent = scored.slice(-8);
+    var last = recent.length ? recent[recent.length - 1] : null;
+    // 及格线按「最近一场」的及格分/总分折算。各卷满分不同，折成百分比才能同图比较
+    var threshold = (last && last.passScore && last.totalScore)
+      ? last.passScore / last.totalScore * 100 : 60;
+
+    document.getElementById('chart-trend').innerHTML = Charts.line({
+      points: recent.map(function (r) {
+        return { label: r.examTitle || '未命名', value: r.score / r.totalScore * 100 };
+      }),
+      threshold: threshold,
+      thresholdText: '及格线 ' + (Math.round(threshold * 10) / 10) + '%'
+    });
+    document.getElementById('trend-hint').textContent = scored.length
+      ? '最近 ' + recent.length + ' 场 / 共 ' + scored.length + ' 场已出分'
+      : '';
+
+    var passed = scored.filter(function (r) { return r.passed === true; }).length;
+    document.getElementById('chart-pass').innerHTML = Charts.donut({
+      value: passed,
+      total: scored.length,
+      label: '及格',
+      tone: 'var(--ok)',
+      sublabel: scored.length
+        ? passed + ' / ' + scored.length + ' 门及格'
+        : '还没有已出分的成绩'
+    });
+  }
+
+  function render() {
+    var tb = document.getElementById('tbody');
+    if (!records.length) {
+      tb.innerHTML = '<tr><td colspan="7" class="empty">还没有考试记录，去 <a href="/student/exams.html">我的考试</a> 参加一场吧</td></tr>';
+      return;
+    }
+    tb.innerHTML = records.map(function (r, i) {
+      var scoreTxt = (r.score === null || r.score === undefined)
+        ? '<span class="muted">—</span>'
+        : '<strong>' + UI.esc(r.score) + '</strong> <span class="muted">/ ' + UI.esc(r.totalScore || '-') + '</span>';
+      var actions;
+      if (r.status === 0) {
+        actions = '<a class="btn btn-sm btn-success" href="/student/exam.html?recordId=' + r.recordId + '">继续答题</a>';
+      } else {
+        // status >= 1（待判分 / 已出分 / 超时）都能打开成绩单：
+        // 待判分时显示的是「已知部分合计 + N 题待复核」，
+        // 比原先干等着「判分中…」有用得多，也让「AI 没启用」这件事可见
+        actions = '<button class="btn btn-sm" data-detail="' + r.recordId + '">成绩单</button>';
+      }
+      return '<tr>'
+        + '<td class="muted">' + (i + 1) + '</td>'
+        + '<td><strong>' + UI.esc(r.examTitle) + '</strong></td>'
+        + '<td class="muted">' + UI.esc(UI.fmtTime(r.endTime || r.startTime)) + '</td>'
+        + '<td>' + scoreTxt + '</td>'
+        + '<td>' + resultBadge(r) + '</td>'
+        + '<td>' + statusBadge(r) + '</td>'
+        + '<td class="actions text-right">' + actions + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  /* ---------------------------------------------------- 成绩单详情 */
+
+  function openDetail(recordId) {
+    var card = document.getElementById('detail-card');
+    card.style.display = '';
+    document.getElementById('detail-body').innerHTML = '<div class="spinner">加载成绩单…</div>';
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    return API.get('/api/exams/records/' + recordId + '/result').then(function (res) {
+      currentResult = res;
+      onlyWrong = false;
+      document.getElementById('btn-only-wrong').textContent = '只看错题';
+      document.getElementById('detail-title').textContent = '成绩单 · ' + (res.examTitle || '');
+      renderDetail();
+    }).catch(function (err) {
+      document.getElementById('detail-body').innerHTML =
+        '<div class="empty text-danger">' + UI.esc(err.message) + '</div>';
+    });
+  }
+
+  function typeName(t) {
+    return ({ 0: '单选题', 1: '多选题', 2: '判断题', 3: '填空题', 4: '简答题' })[t] || '题目';
+  }
+
+  /** 选项 JSON 串 → [{label, content}]；解析不出来就当没有选项 */
+  function parseOptions(raw) {
+    if (!raw) { return []; }
+    try {
+      var arr = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+      if (!Array.isArray(arr)) { return []; }
+      return arr.map(function (o) {
+        if (Array.isArray(o)) { return { label: String(o[0]), content: String(o[1]) }; }
+        return { label: String(o.label), content: String(o.content) };
+      }).filter(function (o) { return o.label; });
+    } catch (e) { return []; }
+  }
+
+  /** 答案串 → 字母集合（多选题的 "AC" 要拆成 A、C 两个） */
+  function answerLetters(s) {
+    var set = {};
+    String(s || '').toUpperCase().replace(/[^A-Z]/g, '').split('').forEach(function (c) { set[c] = true; });
+    return set;
+  }
+
+  /**
+   * 选择题的选项列表。
+   *
+   * ★ 这一块是「错题复习」的核心：只给题干 + 一个字母，学生根本不知道
+   * 自己错在哪（B 和 D 分别写了什么？）。所以把选项完整列出来，
+   * 并且标出**正确项**与**学生选的那一项**。
+   */
+  function renderOptions(a) {
+    var opts = parseOptions(a.options);
+    if (!opts.length) { return ''; }
+    var correct = answerLetters(a.correctAnswer);
+    var chosen = answerLetters(a.studentAnswer);
+    var html = '<ul class="rv-opts">';
+    opts.forEach(function (o) {
+      var isCorrect = !!correct[o.label];
+      var isChosen = !!chosen[o.label];
+      var cls = 'rv-opt' + (isCorrect ? ' is-correct' : '') + (isChosen ? ' is-chosen' : '')
+        + (isChosen && !isCorrect ? ' is-wrong-pick' : '');
+      var mark = isCorrect ? '✓' : (isChosen ? '✗' : '');
+      html += '<li class="' + cls + '">'
+        + '<span class="rv-opt-label">' + UI.esc(o.label) + '</span>'
+        + '<span class="rv-opt-text">' + UI.esc(o.content) + '</span>'
+        + (mark ? '<span class="rv-opt-mark">' + mark + '</span>' : '')
+        + '</li>';
+    });
+    html += '</ul>';
+    return html;
+  }
+
+  /** 答案解析：错题复习最需要的一段 */
+  function renderAnalysis(a) {
+    if (!a.analysis) { return ''; }
+    return '<div class="q-analysis"><span class="ai-tag">解析</span>' + UI.esc(a.analysis) + '</div>';
+  }
+
+  function renderDetail() {
+    var res = currentResult;
+    if (!res) { return; }
+    var pending = res.pendingReviewCount || 0;
+    // passed === null 表示还有题没评完，服务端刻意不给及格判定
+    var cls = res.passed === true ? 'pass' : (res.passed === false ? 'fail' : '');
+
+    var hero = '<div class="score-hero">'
+      + '<div class="score-big ' + cls + '">' + UI.esc(res.score === null ? '-' : res.score) + '</div>'
+      + '<div class="score-total">满分 ' + UI.esc(res.totalScore) + '　'
+      + (res.passed === true ? '<span class="text-ok">及格</span>'
+        : res.passed === false ? '<span class="text-danger">未及格</span>'
+        : '<span class="text-warn">待复核</span>')
+      + '</div>'
+      // 有题没评上时，当前总分只是「已知部分」的合计，必须说清楚
+      + (pending > 0
+          ? '<div class="muted" style="font-size:12px;margin-top:6px">含 '
+            + UI.esc(pending) + ' 道主观题尚未评分，当前总分为已知部分合计，及格判定暂不成立</div>'
+          : '')
+      + '</div>';
+
+    var stats = '<div class="stat-grid" style="margin-bottom:16px">'
+      + stat(res.correctCount + ' / ' + res.totalCount, '答对题数')
+      + stat(res.answers.length, '题目数')
+      + (pending > 0 ? stat(pending, '待复核') : '')
+      + '</div>';
+
+    var list = res.answers || [];
+    // 「只看错题」不该把「待复核」算进来 —— 尚未评分不等于答错
+    var shown = onlyWrong
+      ? list.filter(function (a) { return !a.pendingReview && !a.isCorrect; })
+      : list;
+
+    var rows = shown.map(function (a, i) {
+      var rowCls = a.pendingReview ? 'pending'
+        : a.isCorrect ? 'correct'
+        : (a.earnedScore > 0 ? 'partial' : 'wrong');
+
+      var scoreCell;
+      if (a.pendingReview) {
+        scoreCell = '<span class="badge badge-warn" title="未启用 AI 评分，或该题 AI 评分失败">待复核</span>';
+      } else if (a.earnedScore > 0) {
+        scoreCell = '<span class="badge ' + (a.isCorrect ? 'badge-success' : 'badge-warn') + '">+'
+          + UI.esc(a.earnedScore) + '</span>';
+      } else {
+        scoreCell = '<span class="badge badge-danger">0</span>';
+      }
+
+      var stu = a.studentAnswer ? UI.esc(a.studentAnswer) : '<span class="muted">未作答</span>';
+
+      // AI 评分理由：让学生知道分是怎么来的，而不是只看到一个数字
+      var aiNote = (a.gradedBy === 'AI' && a.aiReason)
+        ? '<div class="ai-note"><span class="ai-tag">AI 评分</span>' + UI.esc(a.aiReason) + '</div>'
+        : '';
+
+      return '<tr class="result-row ' + rowCls + '">'
+        + '<td style="width:40px" class="muted">' + (i + 1) + '</td>'
+        + '<td>'
+        + '<div><span class="badge badge-gray">' + typeName(a.type) + '</span> '
+        + '<span class="q-score">' + UI.esc(a.score) + ' 分</span></div>'
+        + '<div class="pre-wrap" style="margin-top:6px">' + UI.esc(a.questionContent) + '</div>'
+        + renderOptions(a)
+        + renderAnalysis(a)
+        + aiNote
+        + '</td>'
+        + '<td style="width:110px" class="pre-wrap">' + stu + '</td>'
+        + '<td style="width:110px" class="ans-tag ok pre-wrap">' + UI.esc(a.correctAnswer) + '</td>'
+        + '<td style="width:90px">' + scoreCell + '</td>'
+        + '</tr>';
+    }).join('');
+
+    document.getElementById('detail-body').innerHTML = hero + stats
+      + '<div class="table-wrap"><table><thead><tr>'
+      + '<th>#</th><th>题目</th><th>我的作答</th><th>正确答案</th><th>得分</th>'
+      + '</tr></thead><tbody>'
+      + (rows || '<tr><td colspan="5" class="empty">' + (onlyWrong ? '没有答错的题' : '没有题目') + '</td></tr>')
+      + '</tbody></table></div>';
+  }
+
+  /* ---------------------------------------------------- 事件 */
+
+  document.getElementById('tbody').addEventListener('click', function (ev) {
+    var btn = ev.target.closest('button[data-detail]');
+    if (btn) { openDetail(btn.getAttribute('data-detail')); }
+  });
+  document.getElementById('btn-only-wrong').addEventListener('click', function () {
+    onlyWrong = !onlyWrong;
+    this.textContent = onlyWrong ? '显示全部' : '只看错题';
+    renderDetail();
+  });
+  document.getElementById('btn-close-detail').addEventListener('click', function () {
+    document.getElementById('detail-card').style.display = 'none';
+    currentResult = null;
+  });
+  document.getElementById('btn-refresh').addEventListener('click', function () { load(); });
+
+  function load() {
+    document.getElementById('tbody').innerHTML = '<tr><td colspan="7" class="spinner">加载中…</td></tr>';
+    return Promise.all([API.get('/api/exams/my'), loadStats()])
+      .then(function (res) {
+        records = res[0] || [];
+        render();
+        renderCharts();
+      })
+      .catch(function (err) {
+        document.getElementById('tbody').innerHTML =
+          '<tr><td colspan="7" class="empty text-danger">加载失败：' + UI.esc(err.message) + '</td></tr>';
+      });
+  }
+
+  // 支持从别处带 ?recordId= 直接打开成绩单
+  var direct = new URLSearchParams(location.search).get('recordId');
+  load().then(function () {
+    if (direct) { openDetail(direct); }
+  });
+})();
+</script>
+</body>
+</html>

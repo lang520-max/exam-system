@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>自由练习 · 在线考试系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav id="nav"></nav>
+
+<div class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">自由练习</h1>
+      <p class="page-sub">
+        自选题库、题型、难度与题量，随机抽题逐题作答；<strong>提交后立即看到对错、正确答案与解析</strong>。
+        练习不计成绩、不计时长，也不会写进「我的成绩」。
+      </p>
+    </div>
+  </div>
+
+  <!-- 1 · 练习设置 -->
+  <div class="card" id="setup-card">
+    <h3 class="card-title">练习设置</h3>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>题库</label>
+        <select id="p-bank"><option value="">全部题库</option></select>
+      </div>
+      <div class="form-row">
+        <label>知识点 / 专题<span class="muted">（可选）</span></label>
+        <select id="p-category"><option value="">全部知识点</option></select>
+      </div>
+      <div class="form-row">
+        <label>题型</label>
+        <select id="p-type">
+          <option value="">全部题型</option>
+          <option value="0">单选题</option>
+          <option value="1">多选题</option>
+          <option value="2">判断题</option>
+          <option value="3">填空题</option>
+          <option value="4">简答题</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>难度</label>
+        <select id="p-difficulty">
+          <option value="">全部难度</option>
+          <option value="1">简单</option>
+          <option value="2">中等</option>
+          <option value="3">困难</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>这一轮练几道</label>
+        <select id="p-count">
+          <option value="5">5 道</option>
+          <option value="10" selected>10 道</option>
+          <option value="20">20 道</option>
+          <option value="30">30 道</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="btn-start">开始练习</button>
+      <span class="muted" id="pool-hint"></span>
+    </div>
+  </div>
+
+  <!-- 2 · 答题 -->
+  <div class="card" id="quiz-card" style="display:none">
+    <div class="flex-between" style="margin-bottom:10px">
+      <h3 class="card-title" style="margin:0" id="quiz-title">第 1 / 10 题</h3>
+      <div>
+        <span class="badge badge-gray" id="quiz-type">单选题</span>
+        <span class="badge badge-info" id="quiz-category" style="display:none"></span>
+        <span class="badge badge-warn" id="quiz-diff">简单</span>
+        <span class="badge badge-success" id="quiz-score">已答对 0</span>
+      </div>
+    </div>
+    <div class="progress" style="margin-bottom:14px"><i id="quiz-bar"></i></div>
+
+    <div class="q-item">
+      <div class="q-content" id="q-content"></div>
+      <div id="q-body"></div>
+    </div>
+
+    <!-- 判分反馈（提交后才出现） -->
+    <div id="feedback" style="display:none"></div>
+
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn" id="btn-submit">提交答案</button>
+      <button class="btn btn-ghost" id="btn-next" style="display:none">下一题</button>
+      <button class="btn-text" id="btn-finish">结束本轮</button>
+    </div>
+  </div>
+
+  <!-- 3 · 本轮结果 -->
+  <div class="card" id="summary-card" style="display:none">
+    <h3 class="card-title">本轮结果</h3>
+    <div id="summary-body"></div>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn" id="btn-again">再练一组</button>
+      <button class="btn btn-ghost" id="btn-back-setup">改设置</button>
+    </div>
+  </div>
+</div>
+
+<script src="/vendor/katex/katex.min.js"></script>
+<script src="/vendor/katex/contrib/auto-render.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/math.js"></script>
+<script>
+(function () {
+  Auth.requireRole('student');
+  UI.renderNav('student', 'practice');
+
+  var TYPE_NAME = { 0: '单选题', 1: '多选题', 2: '判断题', 3: '填空题', 4: '简答题' };
+  var DIFF_NAME = { 1: '简单', 2: '中等', 3: '困难' };
+  var DIFF_BADGE = { 1: 'badge-info', 2: 'badge-warn', 3: 'badge-danger' };
+
+  var questions = [];   // 本轮的题目（不含答案）
+  var idx = 0;          // 当前第几题（0 基）
+  var results = [];     // 每题的结果 {judged, correct}
+  var answered = false; // 当前题是否已经提交过
+  var activeRound = null;
+
+  /* ---------------------------------------------------- 设置 */
+
+  function loadBanks() {
+    return API.get('/api/practice/banks').then(function (list) {
+      var banks = list || [];
+      var sel = document.getElementById('p-bank');
+      sel.innerHTML = '<option value="">全部题库</option>' + banks.map(function (b) {
+        return '<option value="' + b.id + '">' + UI.esc(b.name)
+          + (b.subject ? '（' + UI.esc(b.subject) + '）' : '') + ' · ' + b.total + ' 题</option>';
+      }).join('');
+      document.getElementById('pool-hint').textContent = banks.length
+        ? '当前共 ' + banks.reduce(function (s, b) { return s + b.total; }, 0) + ' 道可练题目'
+        : '题库里还没有启用的题目，请联系教师';
+    }).catch(function (err) {
+      UI.toast('题库加载失败：' + err.message, 'error');
+    });
+  }
+
+  /**
+   * 知识点下拉：只在选了题库之后再拉（各科的知识点体系完全不同），
+   * 未选题库时给出全部题库用到的知识点。
+   */
+  function loadCategories() {
+    var bankId = document.getElementById('p-bank').value;
+    return API.get('/api/practice/categories' + (bankId ? '?bankId=' + bankId : '')).then(function (list) {
+      var sel = document.getElementById('p-category');
+      sel.innerHTML = '<option value="">全部知识点</option>' + (list || []).map(function (c) {
+        return '<option value="' + UI.esc(c.category) + '">' + UI.esc(c.category) + '（' + c.total + ' 题）</option>';
+      }).join('');
+    }).catch(function () { /* 下拉拉不到不该阻塞练习 */ });
+  }
+
+  /* ---------------------------------------------------- 抽题 */
+
+  function start() {
+    var round = {
+      pendingChecks: 0,
+      finishRequested: false,
+      finished: false
+    };
+    activeRound = round;
+
+    var bankId = document.getElementById('p-bank').value;
+    var type = document.getElementById('p-type').value;
+    var difficulty = document.getElementById('p-difficulty').value;
+    var category = document.getElementById('p-category').value;
+    var count = document.getElementById('p-count').value;
+
+    var qs = '?count=' + count;
+    if (bankId) { qs += '&bankId=' + bankId; }
+    if (type !== '') { qs += '&type=' + type; }
+    if (difficulty !== '') { qs += '&difficulty=' + difficulty; }
+    if (category) { qs += '&category=' + encodeURIComponent(category); }
+
+    var btn = document.getElementById('btn-start');
+    btn.disabled = true;
+    btn.textContent = '抽题中…';
+    API.get('/api/practice/questions' + qs).then(function (list) {
+      if (activeRound !== round) { return; }
+      questions = list || [];
+      if (!questions.length) {
+        // 说清楚是哪个条件把题目筛没了 —— 只写「没有题目」，用户只能一个个试
+        UI.toast('这个条件下没有题目' + (category ? '（专题「' + category + '」可能题量较少）' : '')
+          + '，换个题库/专题/题型/难度试试', 'warn');
+        return;
+      }
+      idx = 0;
+      results = [];
+      document.getElementById('setup-card').style.display = 'none';
+      document.getElementById('summary-card').style.display = 'none';
+      document.getElementById('quiz-card').style.display = '';
+      renderQuestion();
+    }).catch(function (err) {
+      if (activeRound === round) { UI.toast('抽题失败：' + err.message, 'error'); }
+    }).then(function () {
+      if (activeRound === round) {
+        btn.disabled = false;
+        btn.textContent = '开始练习';
+      }
+    });
+  }
+
+  /* ---------------------------------------------------- 渲染一道题 */
+
+  function current() { return questions[idx]; }
+
+  function renderQuestion() {
+    var q = current();
+    answered = false;
+
+    document.getElementById('quiz-title').textContent = '第 ' + (idx + 1) + ' / ' + questions.length + ' 题';
+    document.getElementById('quiz-type').textContent = TYPE_NAME[q.type] || '题目';
+    // 知识点标签：让学生看到「这道题属于哪个专题」，也是按专题抽题生效的证据
+    var catEl = document.getElementById('quiz-category');
+    if (catEl) {
+      catEl.textContent = q.category || '';
+      catEl.style.display = q.category ? '' : 'none';
+    }
+    var diff = document.getElementById('quiz-diff');
+    diff.textContent = DIFF_NAME[q.difficulty] || '未标难度';
+    diff.className = 'badge ' + (DIFF_BADGE[q.difficulty] || 'badge-gray');
+
+    var judgedCount = results.filter(function (r) { return r && r.judged; }).length;
+    var rightCount = results.filter(function (r) { return r && r.judged && r.correct; }).length;
+    document.getElementById('quiz-score').textContent = '已答对 ' + rightCount + ' / 已判 ' + judgedCount;
+    document.getElementById('quiz-bar').style.width = Math.round((idx / questions.length) * 100) + '%';
+
+    document.getElementById('q-content').textContent = q.content || '';
+    document.getElementById('q-body').innerHTML = bodyHtml(q);
+
+    document.getElementById('feedback').style.display = 'none';
+    document.getElementById('feedback').innerHTML = '';
+    document.getElementById('btn-submit').style.display = '';
+    document.getElementById('btn-submit').disabled = false;
+    document.getElementById('btn-submit').textContent = '提交答案';
+    document.getElementById('btn-next').style.display = 'none';
+    document.getElementById('btn-next').textContent = (idx === questions.length - 1) ? '看本轮结果' : '下一题';
+    document.getElementById('btn-finish').disabled = false;
+  }
+
+  /** 题干下面的作答区：与正式答题页同一套 markup（q-options / q-option），外观一致 */
+  function bodyHtml(q) {
+    if (q.type === 3 || q.type === 4) {
+      return '<textarea class="practice-input" id="p-input" rows="' + (q.type === 4 ? 4 : 2)
+        + '" placeholder="写出你的答案，提交后可与参考答案对照"></textarea>';
+    }
+    var opts = parseOptions(q.options);
+    if (!opts.length && q.type === 2) {
+      // 判断题的选项在题库里可能没写，兜一个「正确 / 错误」
+      opts = [{ label: 'A', content: '正确' }, { label: 'B', content: '错误' }];
+    }
+    var inputType = (q.type === 1) ? 'checkbox' : 'radio';
+    return '<div class="q-options">' + opts.map(function (o) {
+      return '<label class="q-option">'
+        + '<input type="' + inputType + '" name="pq" value="' + UI.esc(o.label) + '">'
+        + '<span class="label">' + UI.esc(o.label) + '.</span>'
+        + '<span>' + UI.esc(o.content) + '</span>'
+        + '</label>';
+    }).join('') + '</div>';
+  }
+
+  function parseOptions(raw) {
+    if (!raw) { return []; }
+    try {
+      var arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) { return []; }
+      return arr.map(function (o) {
+        if (Array.isArray(o)) { return { label: String(o[0]), content: String(o[1]) }; }
+        return { label: String(o.label), content: String(o.content) };
+      });
+    } catch (e) { return []; }
+  }
+
+  /** 收集当前题的作答 */
+  function collect() {
+    var q = current();
+    if (q.type === 3 || q.type === 4) {
+      var ta = document.getElementById('p-input');
+      return ta ? ta.value.trim() : '';
+    }
+    if (q.type === 1) {
+      var checked = document.querySelectorAll('#q-body input[name="pq"]:checked');
+      return Array.prototype.map.call(checked, function (c) { return c.value; }).sort().join('');
+    }
+    var one = document.querySelector('#q-body input[name="pq"]:checked');
+    return one ? one.value : '';
+  }
+
+  /* ---------------------------------------------------- 提交 / 下一题 */
+
+  function submit() {
+    var q = current();
+    var answer = collect();
+    if (!answer) {
+      // 未作答也允许提交（等于「不会，直接看答案」），但先提醒一句，避免误触
+      UI.confirm({
+        title: '还没作答',
+        text: '这一题你还没有作答，直接看答案吗？',
+        okText: '直接看答案'
+      }).then(function (ok) {
+        if (ok) { doCheck(q, answer); }
+      });
+      return;
+    }
+    doCheck(q, answer);
+  }
+
+  function doCheck(q, answer) {
+    var round = activeRound;
+    if (!round || round.finished || round.finishRequested) { return; }
+    var questionIndex = idx;
+    var btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    btn.textContent = '判分中…';
+    round.pendingChecks++;
+    API.post('/api/practice/check', { questionId: q.id, answer: answer }, { timeoutMs: 30000 }).then(function (res) {
+      if (activeRound !== round || round.finished) { return; }
+      results[questionIndex] = res;
+      if (idx === questionIndex) {
+        answered = true;
+        renderFeedback(res);
+        document.getElementById('btn-submit').style.display = 'none';
+        document.getElementById('btn-next').style.display = '';
+      }
+      var judgedCount = results.filter(function (r) { return r && r.judged; }).length;
+      var rightCount = results.filter(function (r) { return r && r.judged && r.correct; }).length;
+      document.getElementById('quiz-score').textContent = '已答对 ' + rightCount + ' / 已判 ' + judgedCount;
+      document.getElementById('quiz-bar').style.width = Math.round(((questionIndex + 1) / questions.length) * 100) + '%';
+    }).catch(function (err) {
+      if (activeRound !== round || round.finished) { return; }
+      UI.toast('判分失败：' + err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '提交答案';
+    }).then(function () {
+      round.pendingChecks = Math.max(0, round.pendingChecks - 1);
+      if (activeRound === round && round.finishRequested && round.pendingChecks === 0) {
+        finish(round);
+      }
+    });
+  }
+
+  /** 反馈区：对错 + 你的作答 + 正确答案 + 解析（练习模式的核心价值就在这里） */
+  function renderFeedback(res) {
+    var head;
+    if (res.judged && res.correct === true) {
+      head = '<span class="badge badge-success">答对了</span>';
+    } else if (res.judged && res.correct === false) {
+      head = '<span class="badge badge-danger">答错了</span>';
+    } else {
+      head = '<span class="badge badge-warn">填空/简答无自动判分，请自行对照参考答案</span>';
+    }
+    var mine = res.studentAnswer
+      ? '<div class="pre-wrap" style="margin-top:6px">' + UI.esc(res.studentAnswer) + '</div>'
+      : '<span class="muted">未作答</span>';
+    var analysis = res.analysis
+      ? '<div class="q-analysis"><span class="ai-tag">解析</span>' + UI.esc(res.analysis) + '</div>'
+      : '';
+
+    document.getElementById('feedback').innerHTML =
+      '<div class="card" style="margin:14px 0 0;box-shadow:none">'
+      + '<div style="margin-bottom:8px">' + head + '</div>'
+      + '<div class="form-grid">'
+      + '<div><div class="muted" style="font-size:12px">你的作答</div>' + mine + '</div>'
+      + '<div><div class="muted" style="font-size:12px">正确答案</div>'
+      + '<div class="ans-tag ok pre-wrap" style="margin-top:6px">' + UI.esc(res.correctAnswer || '—') + '</div></div>'
+      + '</div>'
+      + analysis
+      + '</div>';
+    document.getElementById('feedback').style.display = '';
+    // KaTeX：math.js 的 MutationObserver 会自动渲染新插入的 $...$
+  }
+
+  function next() {
+    if (idx >= questions.length - 1) { finish(); return; }
+    idx++;
+    renderQuestion();
+  }
+
+  function finish(round) {
+    round = round || activeRound;
+    if (!round || activeRound !== round || round.finished) { return; }
+    if (round.pendingChecks > 0) {
+      round.finishRequested = true;
+      var finishButton = document.getElementById('btn-finish');
+      finishButton.disabled = true;
+      UI.toast('当前题正在判分，完成后会显示本轮统计', 'info');
+      return;
+    }
+    round.finished = true;
+    document.getElementById('quiz-card').style.display = 'none';
+    var answeredCount = results.filter(Boolean).length;
+    var judged = results.filter(function (r) { return r && r.judged; });
+    var right = judged.filter(function (r) { return r.correct; }).length;
+    var rate = judged.length ? Math.round(right / judged.length * 100) : 0;
+
+    document.getElementById('summary-body').innerHTML =
+      '<div class="stat-grid">'
+      + '<div class="stat"><div class="stat-num">' + answeredCount + ' / ' + questions.length + '</div><div class="stat-label">已作答</div></div>'
+      + '<div class="stat"><div class="stat-num">' + right + '</div><div class="stat-label">答对（可自动判分的题）</div></div>'
+      + '<div class="stat"><div class="stat-num">' + rate + '%</div><div class="stat-label">正确率</div></div>'
+      + '</div>'
+      + (judged.length < answeredCount
+          ? '<p class="muted" style="font-size:12.5px;margin-top:10px">有 '
+            + (answeredCount - judged.length) + ' 道填空/简答题没有自动判分，已计入「已作答」但不计入正确率。</p>'
+          : '')
+      + '<p class="muted" style="font-size:12.5px;margin-top:10px">练习不计成绩，也不会出现在「我的成绩」里。</p>';
+    document.getElementById('summary-card').style.display = '';
+    document.getElementById('summary-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ---------------------------------------------------- 事件 */
+
+  document.getElementById('btn-start').addEventListener('click', start);
+  // 切题库 → 知识点体系跟着换（高数是章节，英语是语法/词汇），重新拉一次
+  document.getElementById('p-bank').addEventListener('change', loadCategories);
+  document.getElementById('btn-submit').addEventListener('click', submit);
+  document.getElementById('btn-next').addEventListener('click', next);
+  document.getElementById('btn-finish').addEventListener('click', function () {
+    var hasPendingCheck = activeRound && activeRound.pendingChecks > 0;
+    UI.confirm({
+      title: '结束本轮练习',
+      text: hasPendingCheck
+        ? '当前题正在判分，系统会等待判分完成后再显示本轮统计。'
+        : '结束后会显示本轮统计（已作答 ' + results.filter(Boolean).length + ' 题）。',
+      okText: '结束'
+    }).then(function (ok) { if (ok) { finish(); } });
+  });
+  document.getElementById('btn-again').addEventListener('click', function () {
+    document.getElementById('summary-card').style.display = 'none';
+    var finishButton = document.getElementById('btn-finish');
+    finishButton.disabled = false;
+    start();   // 同样条件重新抽一组（随机，所以题目会换）
+  });
+  document.getElementById('btn-back-setup').addEventListener('click', function () {
+    document.getElementById('summary-card').style.display = 'none';
+    document.getElementById('setup-card').style.display = '';
+  });
+
+  loadBanks().then(loadCategories);
+})();
+</script>
+</body>
+</html>

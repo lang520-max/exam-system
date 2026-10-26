@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>人脸录入 · 在线考试系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">人脸录入</h1>
+      <p class="page-sub">
+        录入后用于开考前的人脸核验。采集时请正对镜头、光线均匀，并**按提示慢慢转头**（活体检测）。
+      </p>
+    </div>
+    <span class="face-tag" id="status-tag">加载中…</span>
+  </div>
+
+  <div class="card" id="card-disabled" style="display:none">
+    <h3 class="card-title">人脸识别未启用</h3>
+    <p class="face-hint">
+      当前环境 <code>app.face.enabled=false</code>：注册不采集人脸、开考也不做核验，
+      因此这里无需录入。生产环境打开该开关后本页即可使用。
+    </p>
+  </div>
+
+  <div class="card" id="card-main">
+    <h3 class="card-title">采集</h3>
+    <div class="face-capture">
+      <div class="face-stage">
+        <video id="video" playsinline autoplay muted></video>
+        <img id="preview" alt="采集结果" style="display:none">
+        <div class="face-placeholder" id="placeholder">
+          点击下方「开始采集」后，浏览器会请求摄像头权限<br>画面只在本机处理，不会上传到第三方
+        </div>
+      </div>
+
+      <div class="face-progress" style="margin-bottom:8px"><i id="face-bar"></i></div>
+      <div class="face-hint" id="hint">尚未开始。点「开始采集」后请把脸放入框内。</div>
+
+      <div class="face-actions">
+        <button class="btn" id="btn-capture">开始采集（需要眨眼）</button>
+        <button class="btn btn-ghost" id="btn-stop" style="display:none">停止</button>
+        <button class="btn" id="btn-save" style="display:none">保存为我的底片</button>
+        <button class="btn-text" id="btn-recapture" style="display:none">重新采集</button>
+      </div>
+
+      <ul class="face-steps">
+        <li>画面里只出现你一个人，正脸对准取景框；</li>
+        <li>出现「请慢慢转头」时，把头向左（或右）转约 30°，再转回正前方（防止用照片冒充）；</li>
+        <li>采集成功后点「保存为我的底片」写入服务器（一张小图，约 20-40KB）。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<!-- 人脸库本地化（离线可用，不使用 CDN）；必须在调用方脚本之前同步引入 -->
+<script src="/vendor/face-api/face-api.js"></script>
+<script src="/js/face-liveness.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  Auth.requireLogin();
+  UI.renderNav(Store.getUser() ? Store.getUser().role : null, 'face-enroll');
+
+  var video = document.getElementById('video');
+  var preview = document.getElementById('preview');
+  var placeholder = document.getElementById('placeholder');
+  var hint = document.getElementById('hint');
+  var statusTag = document.getElementById('status-tag');
+  var btnCapture = document.getElementById('btn-capture');
+  var btnStop = document.getElementById('btn-stop');
+  var btnSave = document.getElementById('btn-save');
+  var btnRecapture = document.getElementById('btn-recapture');
+  var cardDisabled = document.getElementById('card-disabled');
+  var cardMain = document.getElementById('card-main');
+
+  var captured = null;      // 采集到的 base64
+  var capturing = false;
+
+  function setHint(text, kind) {
+    hint.className = 'face-hint' + (kind ? ' is-' + kind : '');
+    hint.textContent = text;
+  }
+
+  function setTag(text, kind) {
+    statusTag.className = 'face-tag' + (kind ? ' is-' + kind : '');
+    statusTag.textContent = text;
+  }
+
+  function showPreview(base64) {
+    preview.src = base64;
+    preview.style.display = 'block';
+    video.style.display = 'none';
+    placeholder.style.display = 'none';
+  }
+
+  function resetStage() {
+    preview.style.display = 'none';
+    preview.removeAttribute('src');
+    video.style.display = 'block';
+    placeholder.style.display = 'flex';
+    btnSave.style.display = 'none';
+    btnRecapture.style.display = 'none';
+    btnCapture.style.display = '';
+    btnStop.style.display = 'none';
+    captured = null;
+  }
+
+  /** 拉取配置与本人状态：功能没开就整页降级说明，别让用户对着黑框点半天 */
+  function load() {
+    return Promise.all([
+      API.get('/api/face/config'),
+      API.get('/api/face/status')
+    ]).then(function (res) {
+      var cfg = res[0] || {};
+      var st = res[1] || {};
+      if (!cfg.enabled) {
+        cardMain.style.display = 'none';
+        cardDisabled.style.display = '';
+        setTag('未启用', '');
+        return;
+      }
+      if (st.enrolled) {
+        var when = st.enrolledAt ? String(st.enrolledAt).replace('T', ' ').slice(0, 16) : '';
+        setTag('已录入' + (when ? ' · ' + when : ''), 'is-ok');
+      } else {
+        setTag('未录入', 'is-warn');
+      }
+    }).catch(function (err) {
+      setHint('加载失败：' + err.message, 'bad');
+    });
+  }
+
+  btnCapture.addEventListener('click', function () {
+    if (capturing) { return; }
+    if (!window.FaceLiveness) {
+      setHint('人脸库未加载（/vendor/face-api/face-api.js 是否可访问？）', 'bad');
+      return;
+    }
+    capturing = true;
+    resetStage();
+    btnCapture.style.display = 'none';
+    btnStop.style.display = '';
+    setHint('正在打开摄像头…');
+    placeholder.style.display = 'none';
+
+    FaceLiveness.capture({
+      video: video,
+      modelPath: '/vendor/face-api/model',
+      onHint: function (text) { setHint(text); },
+      onProgress: function (p) {
+        // 进度条按模块上报的两段式百分比走（转头 0→60%，回正 60→100%）
+        var bar = document.getElementById('face-bar');
+        if (bar && typeof p.percent === 'number') {
+          bar.style.width = p.percent + '%';
+          bar.parentNode.className = 'face-progress' + (p.percent >= 100 ? ' is-done' : '');
+        }
+      }
+    }).then(function (result) {
+      capturing = false;
+      captured = result.imageBase64;
+      showPreview(captured);
+      btnStop.style.display = 'none';
+      btnSave.style.display = '';
+      btnRecapture.style.display = '';
+      setHint('采集成功（' + result.width + '×' + result.height + '，活体已通过）。确认无误后点「保存为我的底片」。', 'ok');
+    }).catch(function (err) {
+      capturing = false;
+      btnStop.style.display = 'none';
+      btnCapture.style.display = '';
+      placeholder.style.display = 'flex';
+      var map = {
+        PERMISSION_DENIED: '摄像头权限被拒绝：请在浏览器地址栏允许摄像头后重试（手机需用 HTTPS 打开本站）',
+        NO_CAMERA: '没有找到可用的摄像头',
+        NO_FACE: '一直没有检测到人脸：请正对镜头、保证光线，并让整张脸进入取景框',
+        CANCELLED: '已取消采集',
+        NO_BLINK: '没有检测到眨眼：请按提示正常眨一次眼（不要一直闭眼或过快地闪过）',
+        LIB_MISSING: '人脸库未加载成功，请刷新页面后重试'
+      };
+      setHint(map[err && err.code] || ('采集失败：' + (err && err.message ? err.message : '未知错误')), 'bad');
+    });
+  });
+
+  btnStop.addEventListener('click', function () {
+    capturing = false;
+    FaceLiveness.stop(video);
+    resetStage();
+    setHint('已停止采集。');
+  });
+
+  btnRecapture.addEventListener('click', function () {
+    resetStage();
+    setHint('已清除上一次采集结果，请重新点「开始采集」。');
+  });
+
+  btnSave.addEventListener('click', function () {
+    if (!captured) { return; }
+    btnSave.disabled = true;
+    setHint('正在保存…');
+    API.post('/api/face/enroll', { imageBase64: captured, liveness: true, source: 'SELF' })
+      .then(function () {
+        setHint('已保存。开考前会拿这张底片与现场抓拍做比对。', 'ok');
+        UI.toast('人脸底片已保存', 'success');
+        btnSave.style.display = 'none';
+        btnRecapture.style.display = 'none';
+        btnCapture.style.display = '';
+        return load();
+      })
+      .catch(function (err) {
+        setHint('保存失败：' + err.message, 'bad');
+      })
+      .then(function () { btnSave.disabled = false; });
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>人脸采集自测 · 在线考试系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+
+  <!-- 人脸库：本地文件，离线可用（必须在本页脚本之前加载） -->
+  <script src="/vendor/face-api/face-api.js"></script>
+  <script src="/js/face-liveness.js"></script>
+
+  <!--
+    本页专用样式。
+    刻意不往 style.css 里加任何东西：那是全站公共文件，一个自测页没有资格改它。
+    等验证完删掉本文件时，这些样式会跟着一起消失，不留残留。
+  -->
+  <style>
+    .stage-wrap {
+      /* 取景框：宽最多 480，高最多 56vh —— 手机竖屏时按钮和结果图不会被挤出屏幕 */
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      aspect-ratio: 4 / 3;
+      max-height: 56vh;
+      margin: 0 auto 14px;
+      background: var(--canvas-3);
+      border: 1px solid var(--rule-2);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-1);
+      overflow: hidden;
+    }
+    .stage-wrap video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;          /* 摄像头比例与取景框不一致时裁边，不拉伸变形 */
+      background: #000;
+      transform: scaleX(-1);      /* 预览做成镜子更符合直觉；抓拍存的是未镜像的原图 */
+    }
+    .stage-hint {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 7px 10px;
+      background: rgba(16, 37, 68, .72);   /* --brand-deep 的透明版 */
+      color: #fff;
+      font-size: 13px;
+      text-align: center;
+    }
+    .shot-img {
+      display: block;
+      max-width: 240px;
+      width: 100%;
+      margin: 0 auto 8px;
+      border: 1px solid var(--rule-2);
+      border-radius: var(--radius);
+    }
+    .mono-line {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink-2);
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="crumbs"><span>人脸采集 · 本机自测页</span></div>
+
+  <div class="card">
+    <h2 class="card-title">眨眼活体检测自测</h2>
+    <p class="muted" style="margin-top:0">
+      把脸放进取景框，正常眨一下眼睛。成功后页面会显示抓拍图与 base64 长度。<br>
+      这个页面只用来本机验证，随时可以删除。
+    </p>
+
+    <div class="stage-wrap">
+      <video id="video" playsinline muted></video>
+      <div class="stage-hint" id="hint">点下面的按钮开始</div>
+    </div>
+
+    <div class="btn-row" style="justify-content:center">
+      <button type="button" class="btn" id="btn-start">开始采集</button>
+      <button type="button" class="btn btn-ghost" id="btn-stop" disabled>取消 / 关摄像头</button>
+    </div>
+
+    <p id="status" class="muted" style="margin:12px 0 4px">正在检查运行环境…</p>
+
+    <!-- 活体进度条：两段式（转头 0→60%，回正 60→100%）。
+         之前漏加了这一根，而用户恰恰是用本页在测 —— 所以「没看到进度条」。 -->
+    <div class="face-progress" style="margin:0 0 8px"><i id="bar"></i></div>
+
+    <p id="progress" class="mono-line" style="margin:0"></p>
+
+    <div id="result" hidden style="margin-top:14px;text-align:center">
+      <img id="shot" class="shot-img" alt="采集结果">
+      <p id="meta" class="mono-line" style="margin:0"></p>
+    </div>
+  </div>
+
+  <p class="footnote">
+    注意：摄像头 API 只在 HTTPS 或 localhost 下可用；本页依赖
+    /vendor/face-api/（本地模型）与 /js/face-liveness.js。
+  </p>
+</div>
+
+<script>
+  /* 自测页脚本：只做「调 capture() → 显示结果」这一件事，不碰后端。 */
+  (function () {
+    'use strict';
+
+    var video = document.getElementById('video');
+    var hintEl = document.getElementById('hint');
+    var statusEl = document.getElementById('status');
+    var progressEl = document.getElementById('progress');
+    var btnStart = document.getElementById('btn-start');
+    var btnStop = document.getElementById('btn-stop');
+    var resultEl = document.getElementById('result');
+    var shotEl = document.getElementById('shot');
+    var metaEl = document.getElementById('meta');
+
+    var running = false;
+
+    // 前置检查：把「库没加载」「环境不支持」两种情况在点按钮之前就说清楚，
+    // 免得用户点了没反应还以为是摄像头坏了。
+    if (!window.faceapi) {
+      statusEl.textContent = '人脸库没加载成功：检查 /vendor/face-api/face-api.js 是否存在。';
+      btnStart.disabled = true;
+      return;
+    }
+    if (!window.FaceLiveness || !window.FaceLiveness.isSupported()) {
+      statusEl.textContent = '当前环境不支持摄像头：必须通过 HTTPS 或 localhost 打开本页。';
+      btnStart.disabled = true;
+      return;
+    }
+    if (!navigator.mediaDevices || !window.isSecureContext) {
+      statusEl.textContent = '提示：当前不是安全上下文（HTTPS / localhost），摄像头可能不可用。';
+    }
+    statusEl.textContent = '就绪。点「开始采集」，把脸放进取景框后眨一下眼。';
+
+    btnStart.addEventListener('click', function () {
+      if (running) { return; }
+      running = true;
+      btnStart.disabled = true;
+      btnStop.disabled = false;
+      resultEl.hidden = true;
+      shotEl.removeAttribute('src');
+      progressEl.textContent = '';
+      hintEl.textContent = '正在启动…';
+      statusEl.textContent = '正在打开摄像头…';
+
+      var startedAt = Date.now();
+
+      window.FaceLiveness.capture({
+        video: video,
+        modelPath: '/vendor/face-api/model',   // 与模块默认值一致，写出来是为了让自测页一眼能看出依赖谁
+        onHint: function (text) {
+          hintEl.textContent = text;
+          statusEl.textContent = text;
+        },
+        onProgress: function (p) {
+          var bar = document.getElementById('bar');
+          if (bar && typeof p.percent === 'number') {
+            bar.style.width = p.percent + '%';
+            bar.parentNode.className = 'face-progress' + (p.percent >= 100 ? ' is-done' : '');
+          }
+          // 把每一帧的状态摊开显示。真机上「明明眨了却过不去」时，看这三个数最有用：
+          //   baseline    = 你的静息 EAR（热身期量出来的）
+          //   arm/close   = 由它推出的睁眼/闭眼阈值（自适应开启时才与 0.28/0.20 不同）
+          // 如果 ear 一直接近 arm 却从不低于 close，就把 earOpen/earClosed 显式传进来试
+          progressEl.textContent = 'stage=' + p.stage
+            + '  ear=' + (p.ear === null ? '—' : p.ear)
+            + '  hasFace=' + p.hasFace
+            + '  blinks=' + p.blinks
+            + (p.baseline == null ? '' : '  基线=' + p.baseline)
+            + (p.armThreshold == null ? '' : '  阈值=' + p.armThreshold + '/' + p.closeThreshold)
+            + (p.minEar == null ? '' : '  最低ear=' + p.minEar)
+            + (p.frames == null ? '' : '  帧数=' + p.frames)
+            + (p.turn == null ? '' : '  转头幅度=' + p.turn + '/' + p.turnThreshold)
+            + (p.percent == null ? '' : '  进度=' + p.percent + '%');
+        }
+      }).then(function (r) {
+        var seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+        hintEl.textContent = '采集成功';
+        statusEl.textContent = '成功：耗时 ' + seconds + ' 秒，EAR=' + r.ear
+          + '，输出 ' + r.width + '×' + r.height + ' JPEG。';
+        shotEl.src = r.imageBase64;
+        // 这一行是本次自测最关心的数字：base64 长度直接决定请求体大小
+        metaEl.textContent = 'imageBase64.length = ' + r.imageBase64.length
+          + '（约 ' + Math.round(r.imageBase64.length / 1024) + ' KB，含 data:image/jpeg;base64, 前缀）';
+        resultEl.hidden = false;
+      }).catch(function (e) {
+        var code = (e && e.code) ? e.code : 'UNKNOWN';
+        if (code === 'CANCELLED') {
+          hintEl.textContent = '已取消';
+          statusEl.textContent = '已取消（摄像头已关闭）。';
+        } else {
+          hintEl.textContent = '采集失败：' + code;
+          statusEl.textContent = '失败 [' + code + '] ' + ((e && e.message) || e);
+        }
+      }).then(function () {
+        running = false;
+        btnStart.disabled = false;
+        btnStop.disabled = true;
+        // capture() 自己已经关掉流了；这里再清一次只是为了不让画面停在最后一帧，
+        // 用户会误以为摄像头还开着。
+        video.srcObject = null;
+      });
+    });
+
+    btnStop.addEventListener('click', function () {
+      // 取消后 capture() 的 Promise 会以 code='CANCELLED' 结束，上面的 catch 会收尾
+      window.FaceLiveness.stop(video);
+      hintEl.textContent = '正在取消…';
+      btnStop.disabled = true;
+    });
+
+    // 关页面 / 跳转时的兜底（模块内部也有 pagehide 兜底，这里示范页面该怎么做）
+    window.addEventListener('pagehide', function () {
+      window.FaceLiveness.stop(video);
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>考试管理 · 在线考试系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- 数学公式渲染：批改弹窗里会显示题干、参考答案与 AI 理由，都含 LaTeX -->
+  <link rel="stylesheet" href="/vendor/katex/katex.min.css">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">考试管理</h1>
+      <p class="page-sub">草稿 → 发布 → 结束。只有「进行中」的考试学生才能看到并开考。</p>
+    </div>
+    <div class="btn-row">
+      <button class="btn-text" id="btn-refresh">刷新</button>
+      <a class="btn btn-sm" href="/teacher/paper-new.html">+ 智能组卷</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+    <table>
+      <thead>
+      <tr>
+        <th style="width:44px">#</th>
+        <th>考试名称</th>
+        <th style="width:80px">时长</th>
+        <th style="width:80px">总分</th>
+        <th style="width:80px">及格分</th>
+        <th style="width:100px">状态</th>
+        <th style="width:250px" class="text-right">操作</th>
+      </tr>
+      </thead>
+      <tbody id="tbody">
+      <tr><td colspan="7" class="spinner">加载中…</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+<p class="footnote">
+    统计口径：及格率的分母是「已交卷人数」（待判分 + 已出分），超时未交卷不计入；<br>
+    分数分布按得分率分段，不同满分的卷子也能横向比较。
+  </p>
+</div>
+
+<div id="modal-host"></div>
+
+<script src="/vendor/katex/katex.min.js"></script>
+<script src="/vendor/katex/contrib/auto-render.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/charts.js"></script>
+<script src="/js/math.js"></script>
+<script>
+(function () {
+  Auth.requireRole('teacher');
+  UI.renderNav('teacher', 'exams');
+
+  var exams = [];
+
+  function statusBadge(s) {
+    if (s === 0) { return '<span class="badge badge-gray">草稿</span>'; }
+    if (s === 1) { return '<span class="badge badge-success">进行中</span>'; }
+    return '<span class="badge badge-warn">已结束</span>';
+  }
+
+  function render() {
+    var tb = document.getElementById('tbody');
+    if (!exams.length) {
+      tb.innerHTML = '<tr><td colspan="7" class="empty">还没有考试，点右上角「智能组卷」创建第一场</td></tr>';
+      return;
+    }
+    tb.innerHTML = exams.map(function (e, i) {
+      var btns = '';
+      if (e.status === 0) {
+        btns += '<button class="btn btn-sm" data-act="publish" data-id="' + e.id + '">发布</button> ';
+      }
+      if (e.status === 1) {
+        btns += '<button class="btn btn-sm btn-ghost" data-act="end" data-id="' + e.id + '">结束</button> ';
+      }
+      // 已发布/已结束的考试都可能有人交卷 → 都提供批改入口
+      if (e.status === 1 || e.status === 2) {
+        btns += '<button class="btn btn-sm btn-ghost" data-act="review" data-id="' + e.id + '">批改</button> ';
+        btns += '<button class="btn btn-sm btn-ghost" data-act="stats" data-id="' + e.id + '">统计</button>';
+        // 人脸核验流水 + 人工放行：学生连续失败或人脸服务不可用时，教师在这里放人
+        btns += ' <button class="btn btn-sm btn-ghost" data-act="face" data-id="' + e.id + '">人脸</button>';
+      }
+      return '<tr>'
+        + '<td class="muted">' + (i + 1) + '</td>'
+        + '<td><strong>' + UI.esc(e.title) + '</strong>'
+        // 试卷类型（V4）：模拟卷 / 专项训练 —— 一眼看出这是哪一类卷子
+        + (e.paperType ? ' <span class="badge ' + (e.paperType === '专项训练' ? 'badge-info' : 'badge-gray') + '">'
+            + UI.esc(e.paperType) + '</span>' : '')
+        + (e.description ? '<div class="muted" style="font-size:12px">' + UI.esc(e.description) + '</div>' : '')
+        + '</td>'
+        + '<td>' + UI.esc(e.duration) + ' 分</td>'
+        + '<td>' + UI.esc(e.totalScore) + '</td>'
+        + '<td>' + UI.esc(e.passScore) + '</td>'
+        + '<td>' + statusBadge(e.status) + '</td>'
+        + '<td class="actions text-right">' + btns + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function load() {
+    document.getElementById('tbody').innerHTML = '<tr><td colspan="7" class="spinner">加载中…</td></tr>';
+    return API.get('/api/exams').then(function (list) {
+      exams = list || [];
+      // 草稿排前面，方便先处理待发布的
+      exams.sort(function (a, b) { return (a.status - b.status) || (b.id - a.id); });
+      render();
+    }).catch(function (err) {
+      document.getElementById('tbody').innerHTML =
+        '<tr><td colspan="7" class="empty text-danger">加载失败：' + UI.esc(err.message) + '</td></tr>';
+    });
+  }
+
+  /* ---------------------------------------------------- 人脸核验面板 */
+
+  /**
+   * 人脸核验流水 + 人工放行。
+   *
+   * 两种需要放行的场景都落在这张表里：学生连续失败达上限、或人脸服务不可用
+   * （超时/欠费/限流）。放行会写一条 OVERRIDE_PASS（带操作人与理由），
+   * 开考门禁随后认可它 —— 这里是门禁唯一的「人工出口」。
+   */
+  function openFacePanel(id) {
+    var exam = exams.filter(function (e) { return e.id === id; })[0];
+    var host = document.getElementById('modal-host');
+    host.innerHTML = '<div class="modal-mask"><div class="modal" style="max-width:880px">'
+      + '<h3 class="modal-title">人脸核验 · ' + UI.esc(exam ? exam.title : '') + '</h3>'
+      + '<div id="face-body"><div class="spinner">加载中…</div></div>'
+      + '<div class="modal-footer"><button class="btn btn-ghost" id="fc-close">关闭</button></div>'
+      + '</div></div>';
+    document.getElementById('fc-close').addEventListener('click', function () { host.innerHTML = ''; });
+
+    var resultText = {
+      PASS: '通过', FAIL: '不通过', LIVENESS_FAIL: '活体未过',
+      UNAVAILABLE: '服务不可用', OVERRIDE_PASS: '人工放行'
+    };
+    var sceneText = { ENROLL: '录入', EXAM_START: '开考核验', OVERRIDE: '教师放行' };
+
+    function canOverride(row) {
+      return row.result === 'FAIL' || row.result === 'LIVENESS_FAIL' || row.result === 'UNAVAILABLE';
+    }
+
+    function render(cfg, logs) {
+      var body = document.getElementById('face-body');
+      if (!body) { return; }
+      if (!cfg || !cfg.enabled) {
+        body.innerHTML = '<div class="empty">当前环境未启用人脸识别（app.face.enabled=false），'
+          + '开考不做核验，无需放行。</div>';
+        return;
+      }
+      if (!logs || !logs.length) {
+        body.innerHTML = '<div class="empty">这场考试还没有人脸核验记录。</div>';
+        return;
+      }
+      body.innerHTML = '<p class="page-sub" style="margin:0 0 12px">'
+        + '共 ' + logs.length + ' 条记录。学生连续失败 ' + (cfg.maxRetries || 3)
+        + ' 次、或核验服务不可用时，点该行的「放行」允许其开考。</p>'
+        + '<div class="table-wrap"><table><thead><tr>'
+        + '<th>时间</th><th>考生</th><th>场景</th><th>结果</th><th>相似度</th><th>说明</th><th>操作</th>'
+        + '</tr></thead><tbody>'
+        + logs.map(function (l) {
+          var cls = (l.result === 'PASS' || l.result === 'OVERRIDE_PASS') ? 'badge badge-ok'
+            : (l.result === 'UNAVAILABLE' ? 'badge badge-warn' : 'badge badge-danger');
+          return '<tr>'
+            + '<td>' + UI.esc(String(l.createdAt || '').replace('T', ' ').slice(5, 16)) + '</td>'
+            + '<td>' + UI.esc(l.realName || l.username || ('#' + l.userId)) + '</td>'
+            + '<td>' + UI.esc(sceneText[l.scene] || l.scene) + '</td>'
+            + '<td><span class="' + cls + '">' + UI.esc(resultText[l.result] || l.result) + '</span></td>'
+            + '<td>' + (l.confidence == null ? '—' : UI.esc(String(l.confidence))) + '</td>'
+            + '<td>' + UI.esc(l.detail || '') + (l.operatorId ? '（操作人 #' + l.operatorId + '）' : '') + '</td>'
+            + '<td>' + (canOverride(l)
+              ? '<button class="btn btn-sm" data-face-override="' + l.userId + '">放行</button>'
+              : '—') + '</td>'
+            + '</tr>';
+        }).join('')
+        + '</tbody></table></div>';
+
+      Array.prototype.forEach.call(body.querySelectorAll('[data-face-override]'), function (b) {
+        b.addEventListener('click', function () {
+          var userId = b.getAttribute('data-face-override');
+          var reason = window.prompt('放行理由（会记入留痕，建议写清楚，例如「现场监考已核对身份证」）',
+            '现场监考已人工核对身份');
+          if (reason === null) { return; }
+          b.disabled = true;
+          API.post('/api/face/override', { userId: Number(userId), examId: id, reason: reason })
+            .then(function () {
+              UI.toast('已放行，该考生现在可以开考', 'success');
+              return loadPanel();
+            })
+            .catch(function (err) {
+              UI.toast(err.message, 'error');
+              b.disabled = false;
+            });
+        });
+      });
+    }
+
+    function loadPanel() {
+      return Promise.all([
+        API.get('/api/face/config'),
+        API.get('/api/face/logs?examId=' + id + '&limit=100')
+      ]).then(function (res) {
+        render(res[0], res[1]);
+      }).catch(function (err) {
+        var body = document.getElementById('face-body');
+        if (body) { body.innerHTML = '<div class="empty">加载失败：' + UI.esc(err.message) + '</div>'; }
+      });
+    }
+
+    loadPanel();
+  }
+
+  /* ---------------------------------------------------- 统计弹窗 */
+
+  function openStats(id) {
+    var exam = exams.filter(function (e) { return e.id === id; })[0];
+    var host = document.getElementById('modal-host');
+    host.innerHTML = '<div class="modal-mask"><div class="modal" style="max-width:880px">'
+      + '<h3 class="modal-title">成绩统计 · ' + UI.esc(exam ? exam.title : '') + '</h3>'
+      + '<div id="stats-body"><div class="spinner">加载中…</div></div>'
+      + '<div class="modal-footer"><button class="btn btn-ghost" id="st-close">关闭</button></div>'
+      + '</div></div>';
+    document.getElementById('st-close').addEventListener('click', function () { host.innerHTML = ''; });
+
+    API.get('/api/exams/' + id + '/stats').then(function (s) {
+      var body;
+      if (s.submittedCount === 0) {
+        body = '<div class="empty">还没有人交卷</div>';
+      } else {
+        body = '<div class="stat-grid" style="margin-bottom:20px">'
+          + cell(s.totalStudents, '报考人数')
+          + cell(s.submittedCount, '已交卷')
+          + cell(s.passCount, '及格人数')
+          + cell((Math.round(s.passRate * 10) / 10) + '%', '及格率')
+          + cell(Math.round(s.avgScore * 10) / 10, '平均分')
+          + cell(s.maxScore, '最高分')
+          + cell(s.minScore, '最低分')
+          + '</div>'
+          + '<div class="chart-grid">'
+          + '<div class="chart-box">'
+          + '<h4>分数分布 <span>按得分率分段</span></h4>'
+          + '<div id="st-chart-dist"></div>'
+          + '<div class="chart-legend">'
+          + '<span><i style="background:var(--danger)"></i>不及格段</span>'
+          + '<span><i style="background:var(--brand)"></i>及格段</span>'
+          + '</div></div>'
+          + '<div class="chart-box"><h4>及格率</h4><div id="st-chart-pass"></div></div>'
+          + '</div>';
+      }
+      document.getElementById('stats-body').innerHTML = body;
+      if (s.submittedCount === 0) { return; }
+
+      // 分布按得分率分段（不同卷满分不同，绝对分段不可比）
+      document.getElementById('st-chart-dist').innerHTML = Charts.bars({ items: s.distribution || [] });
+      document.getElementById('st-chart-pass').innerHTML = Charts.donut({
+        value: s.passCount,
+        total: s.submittedCount,
+        label: '及格率',
+        tone: 'var(--ok)',
+        sublabel: s.passCount + ' / ' + s.submittedCount + ' 人及格'
+      });
+    }).catch(function (err) {
+      document.getElementById('stats-body').innerHTML =
+        '<div class="empty text-danger">' + UI.esc(err.message) + '</div>';
+    });
+  }
+
+  function cell(num, label) {
+    return '<div class="stat"><div class="stat-num">' + UI.esc(num) + '</div>'
+      + '<div class="stat-label">' + UI.esc(label) + '</div></div>';
+  }
+
+  /* ---------------------------------------------------- 事件 */
+
+  document.getElementById('tbody').addEventListener('click', function (ev) {
+    var btn = ev.target.closest('button[data-act]');
+    if (!btn) { return; }
+    var act = btn.getAttribute('data-act');
+    var id = Number(btn.getAttribute('data-id'));
+    btn.disabled = true;
+
+    if (act === 'stats') { openStats(id); btn.disabled = false; return; }
+    if (act === 'review') { openReview(id); btn.disabled = false; return; }
+    if (act === 'face') { openFacePanel(id); btn.disabled = false; return; }
+
+    var isPublish = (act === 'publish');
+    // 发布与结束都是**不可逆**的状态流转（草稿→进行中→已结束），必须二次确认。
+    // 用应用自己的弹窗而不是原生 confirm()：前者的存在对自动化探测与读屏都可见，
+    // 后者是浏览器画的一块、不在 DOM 里（第二轮报告 Bug 16/17 把它误判成「无确认」）。
+    UI.confirm({
+      title: isPublish ? '发布考试' : '结束考试',
+      text: isPublish ? '发布后学生就能看到并开考，确定发布？' : '结束后学生不能再开考，确定结束？',
+      okText: isPublish ? '发布' : '结束',
+      danger: !isPublish
+    }).then(function (ok) {
+      if (!ok) { btn.disabled = false; return; }
+      API.put('/api/exams/' + id + '/' + (isPublish ? 'publish' : 'end'))
+        .then(function () {
+          UI.toast(isPublish ? '考试已发布' : '考试已结束', 'success');
+          load();
+        })
+        .catch(function (err) { UI.toast(err.message, 'error'); btn.disabled = false; });
+    });
+  });
+
+  /* ---------------------------------------------------- 批改弹窗 */
+
+  var TYPE_NAME = { 0: '单选题', 1: '多选题', 2: '判断题', 3: '填空题', 4: '简答题' };
+  function typeName(t) { return TYPE_NAME[t] || '题目'; }
+
+  // 批改上下文：answerId -> 输入框当前值 / 原始值。只提交有改动的题。
+  var reviewCtx = { examId: null, answers: {}, original: {} };
+
+  function gradedByLabel(a) {
+    if (a.pendingReview) { return '<span class="badge badge-warn">待复核</span>'; }
+    if (a.gradedBy === 'AI') { return '<span class="badge badge-info">AI 评分</span>'; }
+    if (a.gradedBy === 'TEACHER') { return '<span class="badge badge-success">教师复核</span>'; }
+    return '<span class="badge badge-gray">自动判分</span>';
+  }
+
+  function openReview(id) {
+    var exam = exams.filter(function (e) { return e.id === id; })[0];
+    var host = document.getElementById('modal-host');
+    host.innerHTML = '<div class="modal-mask"><div class="modal" style="max-width:1040px">'
+      + '<h3 class="modal-title">批改 · ' + UI.esc(exam ? exam.title : '') + '</h3>'
+      + '<div id="review-body"><div class="spinner">加载中…</div></div>'
+      + '<div class="modal-footer">'
+      + '<span id="review-msg" class="muted" style="margin-right:auto;font-size:12px"></span>'
+      + '<button class="btn btn-ghost" id="rv-close">关闭</button>'
+      + '<button class="btn" id="rv-save">保存批改</button>'
+      + '</div></div></div>';
+    document.getElementById('rv-close').addEventListener('click', function () { host.innerHTML = ''; });
+    document.getElementById('rv-save').addEventListener('click', saveReview);
+    renderReview(id);
+  }
+
+  function renderReview(id) {
+    API.get('/api/exams/' + id + '/review').then(function (data) {
+      reviewCtx = { examId: id, answers: {}, original: {} };
+      var records = data.records || [];
+      if (!records.length) {
+        document.getElementById('review-body').innerHTML =
+          '<div class="empty">这场考试还没有人交卷</div>';
+        return;
+      }
+
+      var html = '<p class="muted" style="font-size:12px;margin:0 0 14px">'
+        + '总分 ' + UI.esc(data.totalScore) + '　及格 ' + UI.esc(data.passScore)
+        + '　考生 ' + records.length + ' 人　待复核 ' + UI.esc(data.pendingTotal) + ' 题'
+        + '　<span>· 可修改任意一题，包括 AI 已给出的分数</span></p>';
+
+      records.forEach(function (r) {
+        html += '<div class="review-block"><div class="review-head">'
+          + '<strong>' + UI.esc(r.studentName) + '</strong>'
+          + '<span class="badge badge-gray">' + UI.esc(r.statusText) + '</span>'
+          + '<span class="muted">当前总分 <strong>'
+          + UI.esc(r.score === null ? '—' : r.score) + '</strong></span>'
+          + (r.pendingCount > 0
+              ? '<span class="badge badge-warn">' + UI.esc(r.pendingCount) + ' 题待复核</span>' : '')
+          + '</div><table><thead><tr>'
+          + '<th style="width:68px">题型</th><th>题目 / 学生作答 / 参考答案</th>'
+          + '<th style="width:52px">满分</th><th style="width:96px">评分来源</th>'
+          + '<th style="width:78px">分数</th>'
+          + '</tr></thead><tbody>';
+
+        var rowsHtml = '';
+        (r.answers || []).forEach(function (a) {
+          var cur = (a.earnedScore === null || a.earnedScore === undefined) ? 0 : a.earnedScore;
+          reviewCtx.original[a.answerId] = cur;
+          reviewCtx.answers[a.answerId] = cur;
+
+          rowsHtml += '<tr>'
+            + '<td><span class="badge badge-gray">' + typeName(a.type) + '</span></td>'
+            + '<td>'
+            + '<div class="pre-wrap">' + UI.esc(a.questionContent) + '</div>'
+            + '<div style="margin-top:6px;font-size:12px">学生：'
+            + (a.studentAnswer ? UI.esc(a.studentAnswer) : '<span class="muted">未作答</span>')
+            + '</div>'
+            + '<div class="muted" style="font-size:12px">参考：' + UI.esc(a.correctAnswer) + '</div>'
+            + (a.aiReason
+                ? '<div class="ai-note"><span class="ai-tag">AI 理由</span>' + UI.esc(a.aiReason) + '</div>'
+                : '')
+            + '</td>'
+            + '<td>' + UI.esc(a.fullScore) + '</td>'
+            + '<td>' + gradedByLabel(a) + '</td>'
+            + '<td><input type="number" class="rv-input" data-answer="' + a.answerId + '" min="0" max="'
+            + UI.esc(a.fullScore) + '" value="' + UI.esc(cur) + '"></td>'
+            + '</tr>';
+        });
+        // 开考了但没交卷的考生不会有作答记录（答案是交卷时才落库的），
+        // 这种情况必须说明白，否则弹窗里只有一个空表格，看起来像功能坏了
+        if (!rowsHtml) {
+          rowsHtml = '<tr><td colspan="5" class="empty">该考生尚未交卷，没有作答内容可批改</td></tr>';
+        }
+        html += rowsHtml + '</tbody></table></div>';
+      });
+
+      document.getElementById('review-body').innerHTML = html;
+      Array.prototype.forEach.call(document.querySelectorAll('.rv-input'), function (inp) {
+        inp.addEventListener('input', function () {
+          reviewCtx.answers[inp.getAttribute('data-answer')] = Number(inp.value);
+        });
+      });
+    }).catch(function (err) {
+      document.getElementById('review-body').innerHTML =
+        '<div class="empty text-danger">' + UI.esc(err.message) + '</div>';
+    });
+  }
+
+  function saveReview() {
+    var items = [];
+    Object.keys(reviewCtx.answers).forEach(function (answerId) {
+      var now = reviewCtx.answers[answerId];
+      if (now !== reviewCtx.original[answerId]) {
+        items.push({ answerId: Number(answerId), score: now });
+      }
+    });
+    if (!items.length) { UI.toast('没有改动', 'info'); return; }
+
+    var btn = document.getElementById('rv-save');
+    btn.disabled = true;
+    API.put('/api/exams/answers/review', { items: items })
+      .then(function (res) {
+        UI.toast('已保存 ' + res.updatedCount + ' 题，总分已重算', 'success');
+        if (res.skipped && res.skipped.length) {
+          UI.toast(res.skipped[0] + (res.skipped.length > 1 ? ' 等 ' + res.skipped.length + ' 项' : ''), 'warn');
+        }
+        renderReview(reviewCtx.examId);
+        load();
+      })
+      .catch(function (err) { UI.toast(err.message, 'error'); })
+      .then(function () { btn.disabled = false; });
+  }
+
+  document.getElementById('btn-refresh').addEventListener('click', load);
+  load();
+})();
+</script>
+</body>
+</html>

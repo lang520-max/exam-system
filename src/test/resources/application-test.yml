@@ -1,41 +1,64 @@
-# ============================================================================
-#  测试环境配置：H2 内存库（MySQL 兼容模式）
-#  目的：mvn test 完全不依赖本机是否安装 MySQL，克隆下来就能跑
-# ============================================================================
+# ============================================================
+#  测试档配置
+#  - H2 内存库（MODE=MySQL），每个测试类拿到干净的库
+#  - Redis / RabbitMQ 关闭：判分走 GradingEngine 同步路径，
+#    幂等走数据库条件更新，测试不依赖任何中间件
+# ============================================================
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
   datasource:
     driver-class-name: org.h2.Driver
-    # MODE=MySQL 让 H2 接受 AUTO_INCREMENT / 反引号 / LIMIT ... OFFSET 等 MySQL 写法
-    # DATABASE_TO_LOWER=TRUE 让标识符统一小写，与 MySQL 的表现一致
-    url: jdbc:h2:mem:exam_system;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    url: jdbc:h2:mem:exam_test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
     username: sa
     password: ''
+
   sql:
     init:
       mode: always
-      schema-locations: classpath:schema-h2.sql
-      data-locations: classpath:data-h2.sql
-      # 建表脚本里有中文注释与中文测试数据，显式指定 UTF-8，避免 Windows 默认 GBK 乱码
+      schema-locations: classpath:schema-test.sql
+      data-locations: classpath:data-test.sql
       encoding: UTF-8
-  thymeleaf:
-    cache: false
-    encoding: UTF-8
-    mode: HTML
 
-server:
-  servlet:
-    encoding:
-      charset: UTF-8
-      force: true
+  h2:
+    console:
+      enabled: false
 
-mybatis:
+mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
-  type-aliases-package: com.caikailang.examsystem.domain
+  type-aliases-package: com.exam.entity
   configuration:
     map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+jwt:
+  secret: test-only-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256-algorithm
+  access-expire: 1800000
+  refresh-expire: 604800000
+
+app:
+  redis:
+    enabled: false
+  rabbitmq:
+    enabled: false
+  # 测试档关闭 WebSocket：ServerEndpointExporter 需要真实 Servlet 容器，
+  # 而 @SpringBootTest 用的是 mock web 环境
+  websocket:
+    enabled: false
+  exam:
+    # 关闭超时清理定时任务。
+    # 否则测试刚开考、还没走到交卷断言，定时任务就可能把记录扫成「超时」，
+    # 造成随机失败——这类「跟时钟赛跑」的不稳定测试极难排查。
+    scheduling-enabled: false
 
 logging:
   level:
-    com.caikailang.examsystem: info
-    # 测试输出保持干净；需要看 MyBatis 实际执行的 SQL 时把下面这行改成 debug
-    com.caikailang.examsystem.mapper: warn
+    com.exam: warn
+    org.springframework: warn

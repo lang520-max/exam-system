@@ -1,38 +1,87 @@
 # ============================================================
-#  在线考试 / 题库系统 —— 应用 + MySQL 一键编排
+#  高并发在线考试系统 —— 五服务一键部署
+#
+#  服务：MySQL + Redis + RabbitMQ + App + Nginx
 #  使用：docker compose up -d --build
-#        首次启动会自动执行 sql/schema.sql 与 sql/data.sql 建库并灌入演示数据
-#  说明：本机未安装 Docker，此文件仅作为交付物，未在本地实际运行
+#  访问：http://<服务器IP>（Nginx 反向代理到 App）
+#
+#  ── 上云前必读 ──────────────────────────────────────────────
+#  1. 所有密钥来自同目录的 .env（从 .env.example 复制并改成强随机值）。
+#     .env 已在 .gitignore 中，不会被提交。
+#     缺少某个必需变量时 compose 会直接报错退出，不会静默用弱默认值。
+#
+#  2. 只有 nginx 暴露宿主机端口（80/443）。
+#     MySQL / Redis / RabbitMQ 刻意【不映射】宿主机端口：
+#     app 容器通过内部网络 exam-net 用服务名访问它们，
+#     因此公网无法直连数据库 —— 这是比"改端口"更彻底的隔离。
+#     需要在服务器上管理数据库时，请走 SSH 隧道，例如：
+#       ssh -L 3306:127.0.0.1:3306 user@<服务器IP>
+#     然后本地连 127.0.0.1:3306。
+#
+#  3. 数据库表结构由 Flyway 管理（src/main/resources/db/migration），
+#     不再由 MySQL 容器的 docker-entrypoint-initdb.d 初始化。
+#     原因：initdb 脚本只在数据目录为空时执行一次，
+#     之后任何表结构变更在老服务器上都不会生效。
 # ============================================================
-version: "3.8"
 
 services:
   mysql:
-    image: mysql:8.0.33
+    image: mysql:8.0
     container_name: exam-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?must be set in .env}
       MYSQL_DATABASE: exam_system
       TZ: Asia/Shanghai
     command:
-      # utf8mb4 支持中文题干与 emoji；关闭 ONLY_FULL_GROUP_BY 便于统计类聚合 SQL
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --default-time-zone=+08:00
-    ports:
-      - "3307:3306"
+      - --max_connections=500
+    # 刻意不映射端口：数据库只在 exam-net 内部可达
     volumes:
       - exam-mysql-data:/var/lib/mysql
-      # 官方镜像会按文件名顺序执行 /docker-entrypoint-initdb.d 下的脚本
-      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./sql/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
+    networks:
+      - exam-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: exam-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?must be set in .env}
+    # 刻意不映射端口
+    volumes:
+      - exam-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - exam-net
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: exam-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?must be set in .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?must be set in .env}
+    # 刻意不映射端口：连 15672 管理后台也不对外。
+    # 需要看管理后台时：ssh -L 15672:127.0.0.1:15672 user@<服务器IP>
+    volumes:
+      - exam-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - exam-net
 
@@ -45,20 +94,65 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       TZ: Asia/Shanghai
-      JAVA_OPTS: "-Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
-      # 用环境变量覆盖 application.yml 里的本地连接串，指向 compose 网络内的 mysql 服务
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/exam_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true"
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:?must be set in .env}
+      # 同机容器网络内明文可接受；换云托管数据库且流量过公网时改成 true
+      DB_SSL: ${DB_SSL:-false}
+      DB_ALLOW_PUBLIC_KEY_RETRIEVAL: ${DB_ALLOW_PUBLIC_KEY_RETRIEVAL:-true}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?must be set in .env}
+      # ==== 主观题 AI 评分 ====
+      # 这一整段此前是漏的：容器里 app.ai.enabled 永远取默认值 false，
+      # 于是「在 .env 里开了 AI_ENABLED=true」实际不生效（静默配置失效，
+      # 主观题会一律停在待复核，而部署者以为 AI 已经开了）。
+      AI_ENABLED: ${AI_ENABLED:-false}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      AI_MODEL: ${AI_MODEL:-qwen-plus}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-25}
+      AI_MAX_ANSWER_CHARS: ${AI_MAX_ANSWER_CHARS:-2000}
+    # 应用端口也不直接对外，统一经 nginx 反代
+    expose:
+      - "8080"
+    networks:
+      - exam-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: exam-nginx
+    restart: unless-stopped
+    # 这是唯一对外暴露的服务
     ports:
-      - "8080:8080"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/exam.conf:/etc/nginx/conf.d/exam.conf:ro
+    depends_on:
+      - app
     networks:
       - exam-net
 
 volumes:
   exam-mysql-data:
+    driver: local
+  exam-redis-data:
+    driver: local
+  exam-rabbitmq-data:
     driver: local
 
 networks:

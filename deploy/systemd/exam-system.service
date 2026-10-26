@@ -1,0 +1,60 @@
+# ============================================================================
+#  exam-system systemd 单元（裸机部署，2 核 2 GiB 适配）
+#
+#  安装位置：/etc/systemd/system/exam-system.service
+#  由 deploy/server/deploy-app.sh 自动安装，不要手工改这份仓库里的副本后忘记同步。
+#
+#  JAVA_BIN / JAVA_OPTS 来自 /etc/exam-system/java.env（bootstrap.sh 按机器实际路径生成），
+#  其余配置与密钥来自 /etc/exam-system/exam.env（0600 root:root）。
+#  systemd 会对 $VAR 做变量替换并按空白切分成多个参数，因此 JAVA_OPTS 能直接展开。
+# ============================================================================
+[Unit]
+Description=exam-system 在线考试系统 (Spring Boot 3 / JDK 17)
+Documentation=file:/opt/exam-system/deploy/README.md
+After=network-online.target
+Wants=network-online.target
+# MySQL 是硬依赖：它没起来应用起来也没用（Redis 不做硬依赖，Lettuce 是懒连接）
+After=mysql.service mysqld.service mariadb.service
+
+[Service]
+Type=simple
+User=exam
+Group=exam
+WorkingDirectory=/opt/exam-system
+EnvironmentFile=/etc/exam-system/exam.env
+# ★ ExecStart 必须是【字面路径】，不能写成 ExecStart=$JAVA_BIN $JAVA_OPTS ...
+#   systemd 不展开命令位置上的变量，那样写会以 status=203/EXEC 反复失败，
+#   而且日志里一行 Java 输出都没有（JVM 根本没启动）—— 2026-09-16 在
+#   Alibaba Cloud Linux 4 + systemd 255 上实测踩到。
+#   java 路径与 JVM 参数由 start.sh 从 /etc/exam-system/java.env 读出。
+#   参考：https://github.com/systemd/systemd/issues/23235
+ExecStart=/opt/exam-system/start.sh
+
+Restart=on-failure
+RestartSec=5
+SuccessExitStatus=143
+TimeoutStopSec=40
+KillSignal=SIGTERM
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=exam-system
+
+# ---- 内存护栏 --------------------------------------------------------------
+# 实测阿里云 2 GiB 规格只给出 1670 MiB 可用内存，应用栈（JVM 384m 堆 + MySQL 96M
+# buffer pool + Redis + Nginx）合计约 1.25 GiB，余量只剩 ~400 MiB。
+# 这两条的作用是：越界时让「应用自己先死并重启」，而不是让 OOM Killer 去挑 MySQL 下手
+# （MySQL 的 oom_score 通常比 JVM 更高，被杀掉会连带整站不可用）。
+MemoryHigh=850M
+MemoryMax=1000M
+LimitNOFILE=65535
+
+# ---- 最小权限 --------------------------------------------------------------
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/exam-system /var/log/exam-system
+
+[Install]
+WantedBy=multi-user.target

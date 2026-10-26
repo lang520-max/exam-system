@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>题库管理 · 在线考试系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- 数学公式渲染（本地 KaTeX，离线可用） -->
+  <link rel="stylesheet" href="/vendor/katex/katex.min.css">
+</head>
+<body>
+<div id="nav"></div>
+
+<div class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">题库管理</h1>
+      <p class="page-sub">先建题库，再往里加题。题目分值在这里是「默认分值」，组卷时可以按卷面另行指定。</p>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" id="btn-new-bank">新建题库</button>
+      <button class="btn btn-sm" id="btn-new-question">新增题目</button>
+    </div>
+  </div>
+
+  <!-- 筛选 -->
+  <div class="card">
+    <div class="form-grid">
+      <div class="form-row mb-0">
+        <label>关键词</label>
+        <input type="search" id="f-keyword" maxlength="60"
+               placeholder="题干 / 选项 / 解析 / 答案，回车即搜">
+      </div>
+      <div class="form-row mb-0">
+        <label>题库</label>
+        <select id="f-bank"><option value="">全部题库</option></select>
+      </div>
+      <div class="form-row mb-0">
+        <label>题型</label>
+        <select id="f-type">
+          <option value="">全部题型</option>
+          <option value="0">单选题</option>
+          <option value="1">多选题</option>
+          <option value="2">判断题</option>
+          <option value="3">填空题</option>
+          <option value="4">简答题</option>
+        </select>
+      </div>
+      <div class="form-row mb-0">
+        <label>难度</label>
+        <select id="f-difficulty">
+          <option value="">全部难度</option>
+          <option value="1">简单</option>
+          <option value="2">中等</option>
+          <option value="3">困难</option>
+        </select>
+      </div>
+      <div class="form-row mb-0">
+        <label>知识点</label>
+        <select id="f-category"><option value="">全部知识点</option></select>
+      </div>
+      <div class="form-row mb-0" style="display:flex;align-items:flex-end">
+        <button class="btn btn-block" id="btn-search">查 询</button>
+      </div>
+      <div class="form-row mb-0" style="display:flex;align-items:flex-end">
+        <button type="button" class="btn btn-ghost btn-block" id="btn-reset">重 置</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:10px">
+      <span class="muted" id="total-text">共 0 道题</span>
+    </div>
+    <div class="table-wrap">
+    <table>
+      <thead>
+      <tr>
+        <th style="width:44px">#</th>
+        <th>题干</th>
+        <th style="width:120px">知识点</th>
+        <th style="width:90px">题型</th>
+        <th style="width:80px">难度</th>
+        <th style="width:70px">分值</th>
+        <th style="width:90px">答案</th>
+        <th style="width:120px" class="text-right">操作</th>
+      </tr>
+      </thead>
+      <tbody id="tbody">
+      <tr><td colspan="8" class="spinner">加载中…</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="btn-row" style="justify-content:center;margin-top:16px">
+      <button class="btn btn-ghost btn-sm" id="btn-prev">上一页</button>
+      <span class="muted" id="page-text" style="align-self:center">第 1 页</span>
+      <button class="btn btn-ghost btn-sm" id="btn-next">下一页</button>
+    </div>
+  </div>
+</div>
+
+<!-- 题目编辑弹窗 -->
+<div id="modal-host"></div>
+
+<script src="/vendor/katex/katex.min.js"></script>
+<script src="/vendor/katex/contrib/auto-render.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/math.js"></script>
+<script>
+(function () {
+  Auth.requireRole('teacher');
+  UI.renderNav('teacher', 'questions');
+
+  var TYPE_NAME = { 0: '单选题', 1: '多选题', 2: '判断题', 3: '填空题', 4: '简答题' };
+  var DIFF_NAME = { 1: '简单', 2: '中等', 3: '困难' };
+  var DIFF_BADGE = { 1: 'badge-success', 2: 'badge-warn', 3: 'badge-danger' };
+
+  var banks = [];
+  var page = 1, size = 10, total = 0, totalPages = 1;
+  var editingId = null;   // null = 新增
+
+  /* ---------------------------------------------------- 题库下拉 */
+
+  function loadBanks() {
+    return API.get('/api/banks').then(function (list) {
+      banks = list || [];
+      var sel = document.getElementById('f-bank');
+      sel.innerHTML = '<option value="">全部题库</option>' + banks.map(function (b) {
+        return '<option value="' + b.id + '">' + UI.esc(b.name) + (b.subject ? '（' + UI.esc(b.subject) + '）' : '') + '</option>';
+      }).join('');
+    });
+  }
+
+  /* ---------------------------------------------------- 列表 */
+
+  function load() {
+    var bankId = document.getElementById('f-bank').value;
+    var type = document.getElementById('f-type').value;
+    var difficulty = document.getElementById('f-difficulty').value;
+    var category = document.getElementById('f-category').value;
+    var keyword = document.getElementById('f-keyword').value.trim();
+    var qs = '?page=' + page + '&size=' + size;
+    if (bankId) { qs += '&bankId=' + bankId; }
+    if (type !== '') { qs += '&type=' + type; }
+    if (difficulty !== '') { qs += '&difficulty=' + difficulty; }
+    if (category) { qs += '&category=' + encodeURIComponent(category); }
+    if (keyword) { qs += '&keyword=' + encodeURIComponent(keyword); }
+
+    document.getElementById('tbody').innerHTML = '<tr><td colspan="8" class="spinner">加载中…</td></tr>';
+    return API.get('/api/questions' + qs).then(function (pr) {
+      var list = pr.list || [];
+      total = pr.total || 0;
+      totalPages = Math.max(1, Math.ceil(total / size));
+      var scope = [];
+      if (category) { scope.push('知识点「' + category + '」'); }
+      if (keyword) { scope.push('关键词「' + keyword + '」'); }
+      document.getElementById('total-text').textContent = scope.length
+        ? scope.join(' + ') + ' 命中 ' + total + ' 道题'
+        : '共 ' + total + ' 道题';
+      document.getElementById('page-text').textContent = '第 ' + page + ' / ' + totalPages + ' 页';
+      document.getElementById('btn-prev').disabled = page <= 1;
+      document.getElementById('btn-next').disabled = page >= totalPages;
+
+      var tb = document.getElementById('tbody');
+      if (!list.length) {
+        // 空结果要把「搜了什么」回显出来：只写「没有题目」，用户分不清是筛选生效了
+        // 还是列表没加载出来（老版本的提示会带上关键词，加知识点筛选时别把它弄丢）
+        tb.innerHTML = scope.length
+          ? '<tr><td colspan="8" class="empty">没有符合条件的题目（' + UI.esc(scope.join(' + '))
+            + '），换个条件或点「重置」</td></tr>'
+          : '<tr><td colspan="8" class="empty">还没有题目，点右上角「新增题目」开始建库</td></tr>';
+        return;
+      }
+      tb.innerHTML = list.map(function (q, i) {
+        return '<tr>'
+          + '<td class="muted">' + ((page - 1) * size + i + 1) + '</td>'
+          + '<td><div class="pre-wrap">' + UI.esc(q.content) + '</div></td>'
+          + '<td>' + (q.category
+              ? '<span class="badge badge-info">' + UI.esc(q.category) + '</span>'
+              : '<span class="muted">—</span>') + '</td>'
+          + '<td><span class="badge badge-gray">' + (TYPE_NAME[q.type] || '-') + '</span></td>'
+          + '<td><span class="badge ' + (DIFF_BADGE[q.difficulty] || 'badge-gray') + '">' + (DIFF_NAME[q.difficulty] || '-') + '</span></td>'
+          + '<td>' + UI.esc(q.score) + '</td>'
+          + '<td class="ans-tag">' + UI.esc(q.answer) + '</td>'
+          + '<td class="actions text-right">'
+          + '<button class="btn btn-sm btn-ghost" data-edit="' + q.id + '">编辑</button> '
+          + '<button class="btn btn-sm btn-danger" data-del="' + q.id + '">删除</button>'
+          + '</td></tr>';
+      }).join('');
+    }).catch(function (err) {
+      document.getElementById('tbody').innerHTML =
+        '<tr><td colspan="8" class="empty text-danger">加载失败：' + UI.esc(err.message) + '</td></tr>';
+    });
+  }
+
+  /**
+   * 知识点下拉：数据来自「库里实际用到的标签」，不是一张写死的词表。
+   * 切题库时重新拉一次 —— 各科的知识点体系完全不同（高数是章节、英语是语法/词汇…）。
+   */
+  var categoriesByBank = {};   // bankId -> [{category,total}]；键 '' 存「全部题库」的那一份
+
+  function loadCategories() {
+    var bankId = document.getElementById('f-bank').value;
+    var keep = document.getElementById('f-category').value;
+    return API.get('/api/questions/categories' + (bankId ? '?bankId=' + bankId : '')).then(function (list) {
+      categoriesByBank[bankId || ''] = list || [];
+      var sel = document.getElementById('f-category');
+      sel.innerHTML = '<option value="">全部知识点</option>' + (list || []).map(function (c) {
+        return '<option value="' + UI.esc(c.category) + '">' + UI.esc(c.category) + '（' + c.total + '）</option>';
+      }).join('');
+      // 尽量保留原来选中的知识点（切题库后它可能不存在了，那就回到"全部"）
+      if (keep && (list || []).some(function (c) { return c.category === keep; })) {
+        sel.value = keep;
+      }
+    }).catch(function () { /* 下拉拉不到不该阻塞列表 */ });
+  }
+
+  /** 某个题库已用过的知识点名；没缓存到就退化成「全部题库」的集合 */
+  function categoryNamesFor(bankId) {
+    var list = categoriesByBank[bankId ? String(bankId) : ''] || categoriesByBank[''] || [];
+    return list.map(function (c) { return c.category; });
+  }
+
+  /* ---------------------------------------------------- 题目弹窗 */
+
+  function optionsToInputs(optionsJson) {
+    var map = {};
+    try {
+      (JSON.parse(optionsJson || '[]') || []).forEach(function (o) { map[o.label] = o.content; });
+    } catch (e) { /* 脏数据忽略 */ }
+    return map;
+  }
+
+  function openEditor(q) {
+    editingId = q ? q.id : null;
+    var opt = q ? optionsToInputs(q.options) : {};
+    var bankOptions = banks.map(function (b) {
+      var sel = (q && String(q.bankId) === String(b.id)) ? ' selected' : '';
+      return '<option value="' + b.id + '"' + sel + '>' + UI.esc(b.name) + '</option>';
+    }).join('');
+    // 知识点候选项（datalist）：优先用「该题所在题库」已用过的标签，
+// 没缓存到就退化成全部题库的标签集合 —— 提示而已，不阻塞输入新标签
+    var categoryOptions = categoryNamesFor(q ? q.bankId : document.getElementById('f-bank').value);
+
+    var type = q ? q.type : 0;
+    var isChoice = (type === 0 || type === 1);
+
+    var html = ''
+      + '<div class="modal-mask" id="mask"><div class="modal">'
+      + '<h3 class="modal-title">' + (q ? '编辑题目' : '新增题目') + '</h3>'
+      + '<div class="form-row"><label>所属题库</label><select id="m-bank">' + bankOptions + '</select></div>'
+      + '<div class="form-grid">'
+      + '  <div class="form-row"><label>题型</label><select id="m-type">'
+      + [0, 1, 2, 3, 4].map(function (t) {
+          return '<option value="' + t + '"' + (t === type ? ' selected' : '') + '>' + TYPE_NAME[t] + '</option>';
+        }).join('')
+      + '  </select></div>'
+      + '  <div class="form-row"><label>难度</label><select id="m-diff">'
+      + [1, 2, 3].map(function (d) {
+          return '<option value="' + d + '"' + (q && q.difficulty === d ? ' selected' : '') + '>' + DIFF_NAME[d] + '</option>';
+        }).join('')
+      + '  </select></div>'
+      + '  <div class="form-row"><label>分值</label><input type="number" id="m-score" min="1" value="'
+      + (q ? q.score : 5) + '"></div>'
+      + '</div>'
+      // 知识点：用 datalist 既给出库里已有的标签（避免同一专题写出两种写法），
+      // 又允许直接输入新的专题名 —— 下拉+自由输入，不必先建词表
+      + '<div class="form-row"><label>知识点<span class="muted">（可选，专项训练与自由练习按它抽题）</span></label>'
+      + '<input type="text" id="m-category" list="m-category-list" maxlength="50" placeholder="例如：一元函数积分学 / 语法"'
+      + ' value="' + UI.esc(q ? (q.category || '') : '') + '">'
+      + '<datalist id="m-category-list">'
+      + categoryOptions.map(function (name) { return '<option value="' + UI.esc(name) + '"></option>'; }).join('')
+      + '</datalist></div>'
+      + '<div class="form-row"><label>题干</label><textarea id="m-content" rows="3">' + UI.esc(q ? q.content : '') + '</textarea></div>'
+      + '<div id="m-options-box">'
+      + '  <label style="font-weight:500;font-size:13px">选项</label>'
+      + ['A', 'B', 'C', 'D'].map(function (L) {
+          return '<div class="form-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">'
+            + '<span class="ans-tag" style="width:18px">' + L + '</span>'
+            + '<input type="text" id="m-opt-' + L + '" value="' + UI.esc(opt[L] || '') + '" placeholder="选项内容（留空表示没有该选项）">'
+            + '</div>';
+        }).join('')
+      + '</div>'
+      + '<div class="form-row"><label>正确答案</label><input type="text" id="m-answer" value="' + UI.esc(q ? q.answer : '') + '" placeholder="单选 A；多选 ABC；判断 A/B；主观题填参考答案">'
+      + '<div class="hint">多选题请按字母顺序写，例如 ABC。</div></div>'
+      + '<div class="form-row"><label>解析<span class="muted">（可选）</span></label><textarea id="m-analysis" rows="2">' + UI.esc(q ? (q.analysis || '') : '') + '</textarea></div>'
+      + '<div class="modal-footer">'
+      + '<button class="btn btn-ghost" id="m-cancel">取消</button>'
+      + '<button class="btn" id="m-save">保存</button>'
+      + '</div></div></div>';
+
+    document.getElementById('modal-host').innerHTML = html;
+    syncOptionVisibility();
+
+    document.getElementById('m-type').addEventListener('change', syncOptionVisibility);
+    document.getElementById('m-cancel').addEventListener('click', closeEditor);
+    document.getElementById('m-save').addEventListener('click', save);
+  }
+
+  function syncOptionVisibility() {
+    var t = Number(document.getElementById('m-type').value);
+    // 判断题、主观题不需要选项
+    document.getElementById('m-options-box').style.display =
+      (t === 0 || t === 1) ? '' : 'none';
+  }
+
+  function closeEditor() {
+    document.getElementById('modal-host').innerHTML = '';
+  }
+
+  function save() {
+    var t = Number(document.getElementById('m-type').value);
+    var bankId = Number(document.getElementById('m-bank').value);
+    var content = document.getElementById('m-content').value.trim();
+    var answer = document.getElementById('m-answer').value.trim().toUpperCase();
+    var score = Number(document.getElementById('m-score').value);
+
+    if (!bankId) { UI.toast('请先选择题库（没有题库请先新建）', 'warn'); return; }
+    if (!content) { UI.toast('题干不能为空', 'warn'); return; }
+    if (!answer) { UI.toast('正确答案不能为空', 'warn'); return; }
+    if (!score || score <= 0) { UI.toast('分值必须大于 0', 'warn'); return; }
+
+    var options = null;
+    if (t === 0 || t === 1) {
+      var arr = [];
+      ['A', 'B', 'C', 'D'].forEach(function (L) {
+        var v = document.getElementById('m-opt-' + L).value.trim();
+        if (v) { arr.push({ label: L, content: v }); }
+      });
+      if (arr.length < 2) { UI.toast('单选/多选题至少填两个选项', 'warn'); return; }
+      options = JSON.stringify(arr);
+      // 前端先兜一层：答案必须落在已填选项内，避免白跑一趟后端
+      var available = arr.map(function (o) { return o.label; }).join('');
+      for (var i = 0; i < answer.length; i++) {
+        if (available.indexOf(answer[i]) === -1) {
+          UI.toast('答案「' + answer + '」包含未填写的选项', 'warn');
+          return;
+        }
+      }
+    }
+
+    var payload = {
+      bankId: bankId,
+      type: t,
+      difficulty: Number(document.getElementById('m-diff').value),
+      content: content,
+      options: options,
+      answer: answer,
+      score: score,
+      analysis: document.getElementById('m-analysis').value.trim() || null,
+      category: document.getElementById('m-category').value.trim() || null,
+      status: 1
+    };
+
+    var btn = document.getElementById('m-save');
+    btn.disabled = true;
+    var p = editingId
+      ? API.put('/api/questions/' + editingId, payload)
+      : API.post('/api/questions', payload);
+
+    p.then(function () {
+      UI.toast(editingId ? '题目已更新' : '题目已新增', 'success');
+      closeEditor();
+      load();
+    }).catch(function (err) {
+      UI.toast(err.message, 'error');
+    }).then(function () { btn.disabled = false; });
+  }
+
+  /* ---------------------------------------------------- 新建题库 */
+
+  function openBankDialog() {
+    var html = '<div class="modal-mask" id="mask"><div class="modal" style="max-width:440px">'
+      + '<h3 class="modal-title">新建题库</h3>'
+      + '<div class="form-row" id="row-b-name"><label>题库名称</label>'
+      + '<input type="text" id="b-name" maxlength="100" placeholder="例如 Java 基础题库">'
+      + '<div class="field-error" id="err-b-name"></div></div>'
+      + '<div class="form-row"><label>科目</label><input type="text" id="b-subject" maxlength="50" placeholder="例如 Java"></div>'
+      + '<div class="form-row"><label>描述<span class="muted">（可选）</span></label><textarea id="b-desc" rows="2" maxlength="200"></textarea></div>'
+      + '<div class="modal-footer"><button class="btn btn-ghost" id="b-cancel">取消</button>'
+      + '<button class="btn" id="b-save">创建</button></div>'
+      + '</div></div>';
+    document.getElementById('modal-host').innerHTML = html;
+    document.getElementById('b-cancel').addEventListener('click', closeEditor);
+    // 边输入边消错（与智能组卷、登录页同一套约定）
+    document.getElementById('b-name').addEventListener('input', function () {
+      var row = document.getElementById('row-b-name');
+      var err = document.getElementById('err-b-name');
+      if (row) { row.classList.remove('invalid'); }
+      if (err) { err.textContent = ''; }
+    });
+    document.getElementById('b-save').addEventListener('click', function () {
+      var name = document.getElementById('b-name').value.trim();
+      if (!name) {
+        // 字段级红框 + 常驻红字，而不是只闪一个 toast（第二轮报告 Bug 18：
+        // 组卷页已经这么改了，题库弹窗当时漏了）
+        var row = document.getElementById('row-b-name');
+        var err = document.getElementById('err-b-name');
+        if (row) { row.classList.add('invalid'); }
+        if (err) { err.textContent = '请输入题库名称'; }
+        UI.toast('题库名称不能为空', 'warn');
+        document.getElementById('b-name').focus();
+        return;
+      }
+      var btn = this; btn.disabled = true;
+      API.post('/api/banks', {
+        name: name,
+        subject: document.getElementById('b-subject').value.trim() || null,
+        description: document.getElementById('b-desc').value.trim() || null
+      }).then(function () {
+        UI.toast('题库已创建', 'success');
+        closeEditor();
+        return loadBanks();
+      }).catch(function (err) { UI.toast(err.message, 'error'); })
+        .then(function () { btn.disabled = false; });
+    });
+  }
+
+  /* ---------------------------------------------------- 事件 */
+
+  document.getElementById('tbody').addEventListener('click', function (ev) {
+    var edit = ev.target.closest('button[data-edit]');
+    if (edit) {
+      var id = Number(edit.getAttribute('data-edit'));
+      API.get('/api/questions/' + id).then(openEditor).catch(function (e) { UI.toast(e.message, 'error'); });
+      return;
+    }
+    var del = ev.target.closest('button[data-del]');
+    if (del) {
+      var did = del.getAttribute('data-del');
+      // 删除不可恢复，必须二次确认；用应用内的弹窗（原生 confirm 不在 DOM 里，
+      // 自动化探测与读屏都看不到它 —— 第二轮报告 Bug 16）
+      UI.confirm({
+        title: '删除题目',
+        text: '删除后不可恢复。若这道题已被某份试卷引用，后端会拒绝删除并列出试卷标题。',
+        okText: '删除',
+        danger: true
+      }).then(function (ok) {
+        if (!ok) { return; }
+        API.del('/api/questions/' + did).then(function () {
+          UI.toast('已删除', 'success');
+          load();
+        }).catch(function (e) { UI.toast(e.message, 'error'); });
+      });
+    }
+  });
+
+  document.getElementById('btn-new-question').addEventListener('click', function () {
+    if (!banks.length) { UI.toast('请先新建一个题库', 'warn'); return; }
+    openEditor(null);
+  });
+  document.getElementById('btn-new-bank').addEventListener('click', openBankDialog);
+  document.getElementById('btn-search').addEventListener('click', function () { page = 1; load(); });
+  // 关键词框里按回车直接搜（找题时不该还要去点按钮）
+  document.getElementById('f-keyword').addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter') { ev.preventDefault(); page = 1; load(); }
+  });
+  document.getElementById('btn-reset').addEventListener('click', function () {
+    document.getElementById('f-keyword').value = '';
+    document.getElementById('f-bank').value = '';
+    document.getElementById('f-type').value = '';
+    document.getElementById('f-difficulty').value = '';
+    page = 1;
+    // 题库也清空了 → 知识点下拉要换成「全部题库」的那一份
+    loadCategories().then(load);
+  });
+  // 切题库：知识点体系跟着换（高数是章节、英语是语法/词汇），列表也随之重查
+  document.getElementById('f-bank').addEventListener('change', function () {
+    page = 1;
+    loadCategories().then(load);
+  });
+  document.getElementById('f-category').addEventListener('change', function () { page = 1; load(); });
+  document.getElementById('btn-prev').addEventListener('click', function () { if (page > 1) { page--; load(); } });
+  document.getElementById('btn-next').addEventListener('click', function () { if (page < totalPages) { page++; load(); } });
+
+  loadBanks().then(loadCategories).then(load);
+})();
+</script>
+</body>
+</html>

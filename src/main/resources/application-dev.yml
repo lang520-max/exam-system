@@ -1,9 +1,16 @@
 # ============================================================
-#  零依赖开发档：不需要安装 MySQL，用 H2 文件库直接跑起来
+#  开发环境配置 — H2 内存库，无需 Redis/RabbitMQ
 #  启动方式：mvn spring-boot:run -Dspring-boot.run.profiles=dev
-#  数据文件落在 ./data/exam_system.mv.db，重启后数据仍在
+#  说明：Redis/RabbitMQ 功能在 dev 模式下被禁用。
+#       相关功能由内存模拟版替代，不影响业务逻辑验证。
 # ============================================================
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:file:./data/exam_system;MODE=MySQL;DATABASE_TO_LOWER=TRUE;AUTO_SERVER=TRUE
@@ -12,24 +19,21 @@ spring:
   sql:
     init:
       mode: always
-      # 必须显式指定 UTF-8：H2 的 RUNSCRIPT 默认按平台字符集读脚本，
-      # Windows 默认 GBK 会把中文题干与选项读成乱码
       schema-locations: classpath:schema-h2.sql
-      data-locations: classpath:data-h2.sql
+      # 顺序有意义：先账号，再题库/题目/试卷（后者的 created_by 指向 teacher1）
+      data-locations: classpath:data-h2.sql,classpath:data-h2-shengben.sql
       encoding: UTF-8
   h2:
     console:
-      # 浏览器访问 http://localhost:8080/h2-console 可直接看表数据
       enabled: true
       path: /h2-console
 
-mybatis:
-  mapper-locations: classpath:mapper/*.xml
-  type-aliases-package: com.caikailang.examsystem.domain
+mybatis-plus:
   configuration:
-    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
-logging:
-  level:
-    com.caikailang.examsystem: info
-    com.caikailang.examsystem.mapper: debug
+app:
+  redis:
+    enabled: false
+  rabbitmq:
+    enabled: false

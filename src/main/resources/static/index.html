@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>在线考试系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-box" style="text-align:center">
+    <div class="login-title" style="margin-bottom:10px">在线考试系统</div>
+    <p class="login-sub">正在跳转…</p>
+    <div id="manual" style="display:none;margin-top:16px">
+      <a class="btn" href="/login.html">前往登录页</a>
+    </div>
+  </div>
+</div>
+<script src="/js/api.js"></script>
+<script>
+  // 已登录 → 按角色进对应工作台；未登录 → 登录页
+  (function () {
+    var user = Store.getUser();
+    if (user && Store.getToken()) {
+      location.replace(Auth.homeFor(user.role));
+    } else {
+      location.replace('/login.html');
+    }
+    // 兜底：若 1.5 秒后还停留在此页（例如 replace 被拦截），给个手动入口
+    setTimeout(function () {
+      var m = document.getElementById('manual');
+      if (m) { m.style.display = 'block'; }
+    }, 1500);
+  })();
+</script>
+</body>
+</html>

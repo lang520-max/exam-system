@@ -1,0 +1,137 @@
+# ============================================================
+#  生产环境配置 — Docker Compose / 云服务器部署
+#
+#  所有连接串与密钥通过环境变量注入（见 docker-compose.yml 与 .env）。
+#
+#  注意：密码类变量刻意【不提供默认值】。
+#  缺少时占位符解析失败、启动直接报错，而不是静默退化成一个弱口令。
+#  启动失败是好事——它逼你在部署时就把密钥配好。
+# ============================================================
+# ============================================================
+#  反向代理下的真实客户端 IP
+#
+#  nginx 已经设了 X-Forwarded-For / X-Real-IP，但应用必须显式开启
+#  forward-headers 才会采信它们；否则 request.getRemoteAddr() 拿到的是
+#  nginx 容器的内网地址，exam_record.ip_address 就失去防作弊 / 审计意义
+#  （所有人都记成同一个 IP）。
+# ============================================================
+server:
+  forward-headers-strategy: native
+
+spring:
+  web:
+    resources:
+      cache:
+        # 静态资源不做强缓存（period=0 → 浏览器每次回源校验）。
+        # 为什么：演示期间前端迭代频繁（人脸库脚本、样式、页面），而手机上没法方便地
+        # 强制刷新 —— 缓存住旧 JS 会表现成「我明明改了却没生效」（真实踩过：
+        # 进度条与转头提示上线后，手机仍跑旧脚本，用户反馈"没有进度条"）。
+        # 代价只是每次多一个 304 往返，2 核小机器完全扛得住。
+        period: 0
+  datasource:
+    # DB_SSL：
+    #   false —— app 与 mysql 在同一台机器的容器网络内，明文可接受
+    #   true  —— 改用云托管数据库（RDS 等）且流量过公网时必须打开
+    # 打开 TLS 后应同时把 DB_ALLOW_PUBLIC_KEY_RETRIEVAL 设为 false：
+    # 有 TLS 就不需要公开密钥检索，开着只会放宽中间人风险。
+    url: jdbc:mysql://${DB_HOST:mysql}:${DB_PORT:3306}/exam_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=${DB_SSL:false}&allowPublicKeyRetrieval=${DB_ALLOW_PUBLIC_KEY_RETRIEVAL:true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD}
+
+  # ------------------------------------------------------------
+  #  数据库表结构由 Flyway 管理，替代原先「MySQL 容器 initdb 脚本」的做法。
+  #
+  #  为什么必须换：docker-entrypoint-initdb.d 里的脚本只在数据目录为空时
+  #  执行一次。之后任何表结构变更，在老服务器上都不会生效。
+  # ------------------------------------------------------------
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    encoding: UTF-8
+    # 兼容「已经用 sql/init.sql 建过表」的老库：
+    # schema 非空且没有 flyway_schema_history 时，先把基线标记为已应用，
+    # 而不是抛 "Found non-empty schema but no schema history table" 直接启动失败。
+    # 默认基线版本是 1，而 V1__init_schema.sql 与 sql/init.sql 的建表结果一致，
+    # 所以老库会跳过 V1、只执行 V2 及以后 —— 这正是想要的行为。
+    # 对全新空库无影响：基线只在 schema 非空时生效，V1 会正常执行。
+    baseline-on-migrate: true
+
+  # 显式关死：防止将来有人在 prod 档误开 spring.sql.init 把演示数据灌进生产库
+  sql:
+    init:
+      mode: never
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      # 必须提供：docker-compose 里 redis 是以 --requirepass 启动的。
+      # 这里若缺失，客户端不带密码连接会在运行期认证失败（报 NOAUTH）。
+      password: ${REDIS_PASSWORD}
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASS}
+
+# 生产环境显式打开 Redis 与 RabbitMQ。
+# 基类 application.yml 把两者默认关掉了（为了让本机无中间件也能跑），
+# 这里必须显式打开——降级只能是「有意为之」，生产不能静默退化成同步判分。
+app:
+  redis:
+    enabled: true
+  rabbitmq:
+    enabled: true
+  cors:
+    # 默认空 = 不允许任何跨域。本项目页面与接口同源，正常无需跨域；
+    # 仅在前后端分开部署时通过环境变量显式配置（逗号分隔）。
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+
+  # 人脸识别：生产由环境变量显式打开（默认 false 会在启动日志里明确告警，
+  # 避免「以为门禁生效、其实没开」）。凭证优先走 ECS 实例 RAM 角色。
+  face:
+    enabled: ${FACE_ENABLED:false}
+    endpoint: ${FACE_ENDPOINT:https://facebody.cn-shanghai.aliyuncs.com}
+    region-id: ${FACE_REGION:cn-shanghai}
+    threshold: ${FACE_THRESHOLD:75}
+    pass-window-seconds: ${FACE_PASS_WINDOW_SECONDS:300}
+    max-retries: ${FACE_MAX_RETRIES:3}
+    timeout-seconds: ${FACE_TIMEOUT_SECONDS:15}
+    max-image-chars: ${FACE_MAX_IMAGE_CHARS:400000}
+    imds-url: ${FACE_IMDS_URL:http://100.100.100.200/latest/meta-data/ram/security-credentials}
+    role-name: ${FACE_ROLE_NAME:}
+    access-key-id: ${FACE_ACCESS_KEY_ID:}
+    access-key-secret: ${FACE_ACCESS_KEY_SECRET:}
+
+  # 主观题 AI 评分：生产默认同样关闭，需要时显式打开并配 AI_API_KEY。
+  # 注意这是按量付费的外部调用：每份含主观题的答卷会触发 N 次请求。
+  ai:
+    enabled: ${AI_ENABLED:false}
+    base-url: ${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+    api-key: ${AI_API_KEY:}
+    model: ${AI_MODEL:qwen-plus}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:25}
+    max-answer-chars: ${AI_MAX_ANSWER_CHARS:2000}
+
+# ============================================================
+#  JWT —— 密钥必须由环境变量提供，刻意【不给默认值】
+#
+#  这是与 DB_PASSWORD 一致的处理：缺失时占位符解析失败、启动直接报错。
+#  若像基类 application.yml 那样留一个写死的默认密钥，
+#  漏配环境变量的部署会「用一个公开已知的密钥正常启动」——
+#  任何人都能据此伪造任意用户（含管理员）的 token。
+#  启动失败是好事，它逼你在部署时就把密钥配好。
+# ============================================================
+jwt:
+  secret: ${JWT_SECRET}
+  access-expire: ${JWT_ACCESS_EXPIRE:1800000}
+  refresh-expire: ${JWT_REFRESH_EXPIRE:604800000}
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+logging:
+  level:
+    com.exam: info
